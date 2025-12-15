@@ -1,18 +1,18 @@
 import streamlit as st
 
-import sys
-sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\pages_AppliAnalyseSanté_V2_1")
+#import sys
+#sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\pages_AppliAnalyseSanté_V2_1")
 
 try:
-    from page_tableConso import tableConso
-    from page_chargement_donnees import charger_donnees
-    from page_dispersion_couts_an import Dispersion
-    from page_analyse_generale import Analyse_generale
-    from page_comparaison_survenances import comparaison_survenances
-    from page_cadencement_PSAP import cadencement_PSAP
-    from page_100p100Santé import _100p100Santé
-    from page_etude_sous_famille import etude_sous_famille
-    from page_etude_prix import etude_prix
+    from pages_AppliAnalyseSanté_V2_1.page_tableConso import tableConso
+    from pages_AppliAnalyseSanté_V2_1.page_chargement_donnees import charger_donnees
+    from pages_AppliAnalyseSanté_V2_1.page_dispersion_couts_an import Dispersion
+    from pages_AppliAnalyseSanté_V2_1.page_analyse_generale import Analyse_generale
+    from pages_AppliAnalyseSanté_V2_1.page_comparaison_survenances import comparaison_survenances
+    from pages_AppliAnalyseSanté_V2_1.page_cadencement_PSAP import cadencement_PSAP
+    from pages_AppliAnalyseSanté_V2_1.page_100p100Santé import _100p100Santé
+    from pages_AppliAnalyseSanté_V2_1.page_etude_sous_famille import etude_sous_famille
+    from pages_AppliAnalyseSanté_V2_1.page_etude_prix import etude_prix
 
 except ImportError as e:
     st.error(f"Erreur lors de l'importation des modules : {e}")

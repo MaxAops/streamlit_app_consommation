@@ -1,8 +1,11 @@
-import sys
+#import sys
 import streamlit as st
-sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
-import workOnData
-import charts
+#sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
+
+
+from fonctions import workOnData
+from fonctions import charts
+
 
 choix_annee=[2016,2017,2018,2019,2020,2021, 2022, 2023,2024,2025]
 

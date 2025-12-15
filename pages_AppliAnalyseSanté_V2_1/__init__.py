@@ -1,0 +1,1 @@
+# pages_AppliAnalyseSanté_V2_1/__init__.py

@@ -1,9 +1,11 @@
-import sys
+#import sys
 import streamlit as st
 import numpy as np
-sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
-import build_conso_tables
-import workOnData
+
+#sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
+
+from fonctions import workOnData
+from fonctions import build_conso_tables
 
 choix_annee=[2016,2017,2018,2019,2020,2021, 2022, 2023,2024,2025]
 

@@ -1,8 +1,9 @@
-import sys
+#import sys
 import pandas as pd
 import streamlit as st
-sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
-import workOnData
+#sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
+
+from fonctions import workOnData
 
 try:
     import dataframe_image as dfi # Librairie très instable problèmes récurrents
