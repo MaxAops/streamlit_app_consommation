@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import os
 
-#import sys
-#sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
 
 from fonctions.workOnData import pad_column_with_zeros
 from fonctions.workOnData import load_csv
