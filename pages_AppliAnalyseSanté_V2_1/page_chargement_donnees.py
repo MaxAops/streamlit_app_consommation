@@ -1,10 +1,30 @@
 import streamlit as st
 import pandas as pd
+from pathlib import Path
 import os
+import shutil
+import zipfile
+import io
 
 
 from fonctions.workOnData import pad_column_with_zeros
 from fonctions.workOnData import load_csv
+
+
+
+def init_export_dir():
+    # Définir le répertoire d'export par défaut
+    export_dir = Path(__file__).resolve().parents[1] / "exports" / "images"
+
+    # Si le dossier existe déjà, supprimer son contenu
+    if export_dir.exists():
+        shutil.rmtree(export_dir)
+
+    # Recréer le dossier vide
+    export_dir.mkdir(parents=True, exist_ok=True)
+
+
+    return export_dir
 
 
 
@@ -19,26 +39,52 @@ def charger_donnees():
             st.session_state["donnees"] = df
             st.success("Données chargées avec succès !")
 
+            export_dir = init_export_dir()
+            st.session_state["repertoire_images"] = str(export_dir)
+
         except Exception as e:
             st.error(f"Erreur lors du chargement des données : {e}")
 
     # Ajouter une option pour définir le répertoire de sortie des images
 
-    col1, col2 = st.columns(2)
-    with col1:
-        repertoire = st.text_input("Entrez le chemin vers le répertoire de sortie pour les images :", value="")
-    with col2:
-        if st.session_state["repertoire_images"] is not None:
-            repertoire=st.session_state["repertoire_images"]
-            st.success(f"emplacement de stockage des images : {repertoire}")
+    
+
+
     qualité_image = st.number_input("Entrez la résolution des images souhaitées (entre 0 et 200) :", value=100)
-    if repertoire:
-        if os.path.isdir(repertoire):
-            st.session_state["repertoire_images"] = repertoire
-        else:
-            st.error("Le chemin fourni n'est pas un répertoire valide.")
+    
     if qualité_image:
         st.session_state["Qualité images"] = qualité_image
+
+
+    # -------------------------------
+    # Bouton pour télécharger toutes les images en ZIP
+    # -------------------------------
+    if st.button("Télécharger toutes les images"):
+        images = [
+            str(f)
+            for f in Path(st.session_state["repertoire_images"]).glob("*")
+            if f.suffix.lower() in [".png", ".jpg", ".jpeg"]
+        ]
+
+        if not images:
+            st.warning("Aucune image à télécharger dans le répertoire export.")
+            st.write(f"Répertoire actuel : {st.session_state['repertoire_images']}")
+        else:
+            # Créer un ZIP en mémoire
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w") as zipf:
+                for img_path in images:
+                    zipf.write(img_path, arcname=Path(img_path).name)
+            zip_buffer.seek(0)
+
+            # Proposer le téléchargement
+            st.download_button(
+                label="Télécharger le ZIP",
+                data=zip_buffer,
+                file_name="images.zip",
+                mime="application/zip"
+            )
+
     
     if st.sidebar.button("Supprimer données en mémoire"):
         # Vérifier que les données existent avant de les supprimer

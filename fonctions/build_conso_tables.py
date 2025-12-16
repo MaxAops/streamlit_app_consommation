@@ -151,7 +151,7 @@ def TableConso(df,Emplacement_stockage,ID,Assureur):
     st.dataframe(table)
     
     try:
-        dfi.export(table, Emplacement_stockage+str(annee)+str(Assureur)+'_tableConso.jpg',dpi=200,table_conversion='chrome')
+        dfi.export(table, Emplacement_stockage+"/"+str(annee)+str(Assureur)+'_tableConso.jpg',dpi=200,table_conversion='chrome')
     except:
         print("erreur de la librairie dfi")  
         
@@ -186,7 +186,7 @@ def table_N_vs_NMoins1(table1,table2,annee,Emplacement_stockage,Assureur):
 
     st.dataframe(table)
     try:
-        dfi.export(table, Emplacement_stockage+str(annee)+'_vs_'+str(annee-1)+'_'+str(Assureur)+'_tableConso.jpg',dpi=200,table_conversion='chrome')
+        dfi.export(table, Emplacement_stockage+"/"+str(annee)+'_vs_'+str(annee-1)+'_'+str(Assureur)+'_tableConso.jpg',dpi=200,table_conversion='chrome')
     except:
         print("erreur de la librairie dfi")
     return tableAvantMiseEnforme
@@ -382,7 +382,7 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
     table=format_table_Sousfamille(table,annee)
     st.dataframe(table)
     try:
-        dfi.export(table, Emplacement_stockage+'table_détails_'+str(mesure)+'_'+str(Variable_bouclée)+'_'+str(annee)+'.jpg',dpi=100,table_conversion='chrome')
+        dfi.export(table, Emplacement_stockage+"/"+'table_détails_'+str(mesure)+'_'+str(Variable_bouclée)+'_'+str(annee)+'.jpg',dpi=100,table_conversion='chrome')
     except:
         print("erreur de la librairie dfi")
     return tableAvantMiseEnforme
@@ -416,7 +416,7 @@ def comparaison_sf_n_n_1(tn,tn_1,Emplacement_stockage,annee,mesure,Variable_bouc
     st.dataframe(table)
     
     try:
-        dfi.export(table, Emplacement_stockage+'table_détails_sf_n_n_1_'+str(mesure)+'_'+str(Variable_bouclée)+'_'+str(annee)+"_vs_"+str(annee-1)+'.jpg',dpi=100,table_conversion='chrome')
+        dfi.export(table, Emplacement_stockage+"/"+'table_détails_sf_n_n_1_'+str(mesure)+'_'+str(Variable_bouclée)+'_'+str(annee)+"_vs_"+str(annee-1)+'.jpg',dpi=100,table_conversion='chrome')
     except:
         print("erreur de la librairie dfi")
     

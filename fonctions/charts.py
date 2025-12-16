@@ -124,7 +124,7 @@ def DispersionChart_year(df,Var,Famille,annee,qualitéGraphique,Emplacement_stoc
             fancybox=True, framealpha=0.7,bbox_to_anchor=(0.5, -0.05))
 
 
-        plt.savefig(Emplacement_stockage+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
+        plt.savefig(Emplacement_stockage+"/"+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
         #plt.show()
 
         st.pyplot(fig)
@@ -208,7 +208,7 @@ def PlotVentilationCouts(df_data, annee,qualitéGraphique,Emplacement_stockage,I
 
     plt.grid(True, linestyle='--', alpha=0.3,color='grey')
 
-    plt.savefig(Emplacement_stockage+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
+    plt.savefig(Emplacement_stockage+"/"+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
 
     st.pyplot(plt)
 
@@ -261,7 +261,7 @@ def distributionFamilleActes(df,annee,Emplacement_stockage,qualitéGraphique):
     # Set title
     title=f"Distribution des actes {annee}"
     plt.title(title,weight='bold')
-    plt.savefig(f"{Emplacement_stockage}_{title}_.jpg",bbox_inches='tight',dpi=qualitéGraphique)
+    plt.savefig(f"{Emplacement_stockage}/_{title}_.jpg",bbox_inches='tight',dpi=qualitéGraphique)
 
     st.pyplot(plt)
 
@@ -469,7 +469,7 @@ def Evo_Cons_Moyenne(df, qualitéGraphique, Emplacement_stockage, ID):
     plt.title(title + '\n', fontsize=20)
     plt.legend(loc='lower center', borderaxespad=-7, fontsize=16, ncol=len(evol_cols))
 
-    plt.savefig(Emplacement_stockage + title + '.jpg', bbox_inches='tight', dpi=qualitéGraphique)
+    plt.savefig(Emplacement_stockage+"/" + title + '.jpg', bbox_inches='tight', dpi=qualitéGraphique)
     st.pyplot(plt)
 
 
@@ -504,7 +504,7 @@ def EVO_Consommateurs(df,qualitéGraphique,Emplacement_stockage,ID):
                 weight='bold')
 
 
-    plt.savefig(Emplacement_stockage+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
+    plt.savefig(Emplacement_stockage+"/"+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
 
     st.pyplot(fig)
 
@@ -556,7 +556,7 @@ def EVO_Remboursement_moy(df,var,qualitéGraphique,Emplacement_stockage,ID):
                 weight='bold')
 
 
-    plt.savefig(Emplacement_stockage+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
+    plt.savefig(Emplacement_stockage+"/"+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
 
     st.pyplot(fig)
 
@@ -622,7 +622,7 @@ def Evo_RC(df,qualitéGraphique,Emplacement_stockage):
         except:
             print(bar)
     i=i+1
-    plt.savefig(Emplacement_stockage+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
+    plt.savefig(Emplacement_stockage+"/"+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
 
     st.pyplot(fig)
 
@@ -672,7 +672,7 @@ def EVO_Montant(df,var,qualitéGraphique,Emplacement_stockage):
     
 
 
-    plt.savefig(Emplacement_stockage+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
+    plt.savefig(Emplacement_stockage+"/"+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
 
     st.pyplot(fig)
 
@@ -772,7 +772,7 @@ def Panier_plot(d, ID, PanierVar, titre, qualitéGraphique, Emplacement_stockage
     plt.subplots_adjust(top=1.25)
 
     # Sauvegarde et affichage
-    plt.savefig(Emplacement_stockage + titre + '.jpg', bbox_inches='tight', dpi=qualitéGraphique)
+    plt.savefig(Emplacement_stockage+"/" + titre + '.jpg', bbox_inches='tight', dpi=qualitéGraphique)
     st.pyplot(fig)
 
 
@@ -883,7 +883,7 @@ def Panier_plot_ventilation(d, ID, PanierVar, titre, qualitéGraphique, Emplacem
     plt.tight_layout()
 
     # Sauvegarde et affichage
-    plt.savefig(Emplacement_stockage + titre + 'Ventilation_coûts_.jpg', bbox_inches='tight', dpi=qualitéGraphique)
+    plt.savefig(Emplacement_stockage+"/" + titre + 'Ventilation_coûts_.jpg', bbox_inches='tight', dpi=qualitéGraphique)
     st.pyplot(plt)
 
 
@@ -928,7 +928,7 @@ def Sous_famille_comparaison_montants(data, var,qualitéGraphique, Emplacement_s
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
     # Sauvegarde et affichage
-    plt.savefig(Emplacement_stockage + titre + '.jpg', bbox_inches='tight', dpi=qualitéGraphique)
+    plt.savefig(Emplacement_stockage+"/" + titre + '.jpg', bbox_inches='tight', dpi=qualitéGraphique)
     st.pyplot(fig)
 
 
@@ -1023,7 +1023,7 @@ def etude_composante_dépense(data, variable_prix, sf,Emplacement_stockage,quali
 
         plt.tight_layout(rect=[0, 0.02, 1, 0.98])
         # Sauvegarde et affichage
-        plt.savefig(os.path.join(Emplacement_stockage, nom_fichier + '.jpg'), bbox_inches='tight', dpi=qualitéGraphique)
+        plt.savefig(os.path.join(Emplacement_stockage+"/", nom_fichier + '.jpg'), bbox_inches='tight', dpi=qualitéGraphique)
         st.pyplot(fig)
 
 
@@ -1093,7 +1093,7 @@ def dispertion_chart_comparaison(df,var_montant,element_titre,qualitéGraphique,
     # Afficher le graphique
     # Ajout du cadre avec les montants de RC par année de soins
 
-    plt.savefig(Emplacement_stockage +"dispertion_conso_"+ ''.join(element_titre) + '.jpg', bbox_inches='tight', dpi=qualitéGraphique)
+    plt.savefig(Emplacement_stockage+"/" +"dispertion_conso_"+ ''.join(element_titre) + '.jpg', bbox_inches='tight', dpi=qualitéGraphique)
     st.pyplot(fig)
 
 

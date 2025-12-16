@@ -22,8 +22,15 @@ def _100p100Santé():
         annees=unique_annees
     mois_min, mois_max = st.sidebar.slider("Plage de mois", min_value=1, max_value=12, value=(1, 12))
 
+    columns = list(st.session_state["donnees"].columns)
+    # Valeur par défaut souhaitée
+    default_value = "100% santé"
+
+    # Calcul de l'index correspondant
+    default_index = columns.index(default_value) if default_value in columns else 0
+
     if "Sous famille" in list(st.session_state["donnees"].columns):
-        select_var = st.selectbox('Séléctionnez la variable du 100% santé', list(st.session_state["donnees"].columns))
+        select_var = st.selectbox('Séléctionnez la variable du 100% santé', columns,default_index)
         select_sf = st.multiselect('Séléctionnez la sous famille contenant du 100% santé', list(st.session_state["donnees"]['Sous famille'].unique()))
         # Afficher la variable sélectionnée sous forme de liste
         

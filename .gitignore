@@ -2,6 +2,9 @@
 .venv/
 venv/
 
+# Dossiers temporaires / exports d’images
+exports/
+
 # Python
 __pycache__/
 *.pyc
