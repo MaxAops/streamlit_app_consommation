@@ -151,7 +151,7 @@ def TableConso(df,Emplacement_stockage,ID,Assureur):
     st.dataframe(table)
     
     try:
-        dfi.export(table, Emplacement_stockage+"/"+str(annee)+str(Assureur)+'_tableConso.jpg',dpi=200,table_conversion='chrome')
+        dfi.export(table, Emplacement_stockage+"/"+str(annee)+str(Assureur)+'_tableConso.jpg',dpi=200,table_conversion='matplotlib')#chrome
     except:
         print("erreur de la librairie dfi")  
         
@@ -186,7 +186,7 @@ def table_N_vs_NMoins1(table1,table2,annee,Emplacement_stockage,Assureur):
 
     st.dataframe(table)
     try:
-        dfi.export(table, Emplacement_stockage+"/"+str(annee)+'_vs_'+str(annee-1)+'_'+str(Assureur)+'_tableConso.jpg',dpi=200,table_conversion='chrome')
+        dfi.export(table, Emplacement_stockage+"/"+str(annee)+'_vs_'+str(annee-1)+'_'+str(Assureur)+'_tableConso.jpg',dpi=200,table_conversion='matplotlib')
     except:
         print("erreur de la librairie dfi")
     return tableAvantMiseEnforme
