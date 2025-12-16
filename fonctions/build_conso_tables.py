@@ -98,7 +98,7 @@ def Famille_acte_sorted(df):
             Famille_acte_sorted.append(i)
     return Famille_acte_sorted
 
-def TableConso(df,Emplacement_stockage,ID,Assureur):
+def TableConso(df,Emplacement_stockage,ID,backend):
 
     #Ordre ligne
     ### kk
@@ -151,7 +151,7 @@ def TableConso(df,Emplacement_stockage,ID,Assureur):
     st.dataframe(table)
     
     try:
-        dfi.export(table, Emplacement_stockage+"/"+str(annee)+str(Assureur)+'_tableConso.jpg',dpi=200,table_conversion='matplotlib')#chrome
+        dfi.export(table, Emplacement_stockage+"/"+str(annee)+'_tableConso.jpg',dpi=200,table_conversion=backend)
     except:
         print("erreur de la librairie dfi")  
         
@@ -159,7 +159,7 @@ def TableConso(df,Emplacement_stockage,ID,Assureur):
 
 
 
-def table_N_vs_NMoins1(table1,table2,annee,Emplacement_stockage,Assureur):
+def table_N_vs_NMoins1(table1,table2,annee,Emplacement_stockage,backend):
 
     table=(table1[['Nombre consommants', 'Frais réels',
        'Remboursement sécurité sociale', 'Remboursement complémentaire',
@@ -186,7 +186,7 @@ def table_N_vs_NMoins1(table1,table2,annee,Emplacement_stockage,Assureur):
 
     st.dataframe(table)
     try:
-        dfi.export(table, Emplacement_stockage+"/"+str(annee)+'_vs_'+str(annee-1)+'_'+str(Assureur)+'_tableConso.jpg',dpi=200,table_conversion='matplotlib')
+        dfi.export(table, Emplacement_stockage+"/"+str(annee)+'_vs_'+str(annee-1)+'_'+'_tableConso.jpg',dpi=200,table_conversion=backend)
     except:
         print("erreur de la librairie dfi")
     return tableAvantMiseEnforme
@@ -313,7 +313,7 @@ def format_table_Sousfamille(table,annee):
 
     return table
 
-def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouclée):
+def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouclée,backend):
 
     st.write(f"{Variable_bouclée} : {len(df[df[mesure].isna()])} lignes n'ont pas de sous famille renseignées. Soit {formatM(df[df[mesure].isna()]['RC'].sum())}€ de remboursement complémentaire")
     
@@ -382,13 +382,13 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
     table=format_table_Sousfamille(table,annee)
     st.dataframe(table)
     try:
-        dfi.export(table, Emplacement_stockage+"/"+'table_détails_'+str(mesure)+'_'+str(Variable_bouclée)+'_'+str(annee)+'.jpg',dpi=100,table_conversion='chrome')
+        dfi.export(table, Emplacement_stockage+"/"+'table_détails_'+str(mesure)+'_'+str(Variable_bouclée)+'_'+str(annee)+'.jpg',dpi=100,table_conversion=backend)
     except:
         print("erreur de la librairie dfi")
     return tableAvantMiseEnforme
 
 
-def comparaison_sf_n_n_1(tn,tn_1,Emplacement_stockage,annee,mesure,Variable_bouclée):
+def comparaison_sf_n_n_1(tn,tn_1,Emplacement_stockage,annee,mesure,Variable_bouclée,backend):
     # Définir les index
     tn_idx = tn.set_index('Sous famille')
     tn_1_idx = tn_1.set_index('Sous famille')
@@ -416,7 +416,7 @@ def comparaison_sf_n_n_1(tn,tn_1,Emplacement_stockage,annee,mesure,Variable_bouc
     st.dataframe(table)
     
     try:
-        dfi.export(table, Emplacement_stockage+"/"+'table_détails_sf_n_n_1_'+str(mesure)+'_'+str(Variable_bouclée)+'_'+str(annee)+"_vs_"+str(annee-1)+'.jpg',dpi=100,table_conversion='chrome')
+        dfi.export(table, Emplacement_stockage+"/"+'table_détails_sf_n_n_1_'+str(mesure)+'_'+str(Variable_bouclée)+'_'+str(annee)+"_vs_"+str(annee-1)+'.jpg',dpi=100,table_conversion=backend)
     except:
         print("erreur de la librairie dfi")
     
