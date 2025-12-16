@@ -1,8 +1,7 @@
-#import sys
 import streamlit as st
 import numpy as np
+import os
 
-#sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
 
 from fonctions import workOnData
 from fonctions import build_conso_tables
@@ -19,6 +18,12 @@ def tableConso():
     # Créer des widgets pour permettre à l'utilisateur de choisir l'année et l'intervalle de mois
     annee = st.sidebar.selectbox("Année", choix_annee)
     mois_min, mois_max = st.sidebar.slider("Plage de mois", min_value=1, max_value=12, value=(1, 12))
+    
+    # Détecter si on est sur Streamlit Cloud
+    ON_CLOUD = os.environ.get("STREAMLIT_SERVER_HEADLESS") == "true"
+
+    # Choisir le backend selon l'environnement
+    backend = "matplotlib" if ON_CLOUD else "chrome"
 
     if st.button('table par familles actes'):
             cancel = st.button("Annuler")
@@ -26,9 +31,9 @@ def tableConso():
                 # Charger les données CSV à partir du fichier
                 data1=workOnData.load_data(st.session_state["donnees"],annee,mois_min, mois_max)
                 data2=workOnData.load_data(st.session_state["donnees"],annee-1,mois_min, mois_max)
-                table1=build_conso_tables.TableConso(data1,st.session_state["repertoire_images"],ID,'')
-                table2=build_conso_tables.TableConso(data2,st.session_state["repertoire_images"],ID,'')
-                tableVs=build_conso_tables.table_N_vs_NMoins1(table1,table2,annee,st.session_state["repertoire_images"],'')
+                table1=build_conso_tables.TableConso(data1,st.session_state["repertoire_images"],ID,backend)
+                table2=build_conso_tables.TableConso(data2,st.session_state["repertoire_images"],ID,backend)
+                tableVs=build_conso_tables.table_N_vs_NMoins1(table1,table2,annee,st.session_state["repertoire_images"],backend)
                 
                 ecart_table=len(table1)+3
 
@@ -40,9 +45,20 @@ def tableConso():
     
     st.title("Tables consommations par sous familles")
 
-    Mesure = st.selectbox('Séléctionnez la variable d\'index de la future table', list(st.session_state["donnees"].columns))
+    columns = list(st.session_state["donnees"].columns)
+    # Valeur par défaut souhaitée
+    Mesure_def = "Sous famille"
+    # Calcul de l'index correspondant
+    index_mesure = columns.index(Mesure_def) if Mesure_def in columns else 0
+
+    # Valeur par défaut souhaitée
+    boucle_def = "Famille acte"
+    # Calcul de l'index correspondant
+    index_boucle = columns.index(boucle_def) if boucle_def in columns else 0
+
+    Mesure = st.selectbox('Séléctionnez la variable d\'index de la future table', list(st.session_state["donnees"].columns),index_mesure)
                     
-    boucle = st.selectbox('Séléctionnez la variable sur laquelle vous voulez boucler (ex : Famille acte):', list(st.session_state["donnees"].columns))
+    boucle = st.selectbox('Séléctionnez la variable sur laquelle vous voulez boucler (ex : Famille acte):', list(st.session_state["donnees"].columns),index_boucle)
     
     on_comparaison = st.toggle("Comparer N et N-1?")
 
