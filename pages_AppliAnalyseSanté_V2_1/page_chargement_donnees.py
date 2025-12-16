@@ -70,6 +70,7 @@ def charger_donnees():
             st.warning("Aucune image à télécharger dans le répertoire export.")
             st.write(f"Répertoire actuel : {st.session_state['repertoire_images']}")
         else:
+            st.write(f"Préparation du téléchargement de {len(images)} images...")
             # Créer un ZIP en mémoire
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zipf:
