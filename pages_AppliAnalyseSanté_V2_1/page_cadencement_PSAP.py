@@ -1,7 +1,5 @@
-#import sys
 import pandas as pd
 import streamlit as st
-#sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
 
 from fonctions import workOnData
 

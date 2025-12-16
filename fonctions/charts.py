@@ -17,13 +17,13 @@ import os
 
 import sys
 sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
-from workOnData import formatM
-from workOnData import GetTypeBénéf
-from workOnData import Famille_acte_sorted
-from workOnData import format_string_with_linebreak
-from workOnData import format_value
-from workOnData import optimal_bins
-from workOnData import calculer_bins_labels_equilibres
+from fonctions.workOnData import formatM
+from fonctions.workOnData import GetTypeBénéf
+from fonctions.workOnData import Famille_acte_sorted
+from fonctions.workOnData import format_string_with_linebreak
+from fonctions.workOnData import format_value
+from fonctions.workOnData import optimal_bins
+from fonctions.workOnData import calculer_bins_labels_equilibres
 
 
 # Légendes des futurs axes

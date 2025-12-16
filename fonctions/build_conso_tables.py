@@ -3,10 +3,7 @@ import numpy as np
 import streamlit as st
 import openpyxl
 
-
-import sys
-sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
-from workOnData import formatM
+from fonctions.workOnData import formatM
 
 
 try:
