@@ -1,10 +1,12 @@
 #import sys
 import streamlit as st
+import os
 
 #sys.path.append(r"C:\Users\maxime.genet\Desktop\T\Mission R&D\Application santé\fonctions")
 
 from fonctions import workOnData
 from fonctions import charts
+from fonctions import build_conso_tables
 
 choix_annee=[2016,2017,2018,2019,2020,2021, 2022, 2023,2024,2025]
 
@@ -21,6 +23,13 @@ def _100p100Santé():
     else:
         annees=unique_annees
     mois_min, mois_max = st.sidebar.slider("Plage de mois", min_value=1, max_value=12, value=(1, 12))
+
+    # Détecter si on est sur Streamlit Cloud
+    ON_CLOUD = os.environ.get("STREAMLIT_SERVER_HEADLESS") == "true"
+
+    # Choisir le backend selon l'environnement
+    backend = "matplotlib" if ON_CLOUD else "chrome"
+
 
     columns = list(st.session_state["donnees"].columns)
     # Valeur par défaut souhaitée
@@ -67,5 +76,6 @@ def _100p100Santé():
                         st.session_state["Qualité images"], st.session_state["repertoire_images"])
     charts.Panier_plot_ventilation(data, ID, select_var, sf, 
                         st.session_state["Qualité images"], st.session_state["repertoire_images"])
+    build_conso_tables.table_100_sante(data, st.session_state["repertoire_images"],backend)
                 
             

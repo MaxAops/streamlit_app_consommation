@@ -441,3 +441,218 @@ def ajouter_tableau_excel(file_path, df, sheet_name, startrow, startcol):
         # Si le fichier n'existe pas, le créer et ajouter la table
         with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
             df.to_excel(writer, sheet_name=sheet_name, startrow=startrow, startcol=startcol)
+
+
+
+def table_dentaire(df):
+
+    pt = pd.pivot_table(
+    df,
+    values=['id_bénéf', 'nombre_acte', 'FR', 'R_SS', 'RC'],
+    index=['100% santé'],
+    columns='annee_soins',
+    aggfunc={
+        'id_bénéf': 'nunique',
+        'nombre_acte': 'sum',
+        'FR': 'sum',
+        'R_SS': 'sum',
+        'RC': 'sum'
+    },
+    margins=True,margins_name='Total'
+    )
+        # 1️⃣ Calcul du RAC
+    rac = (
+        pt.xs('FR', axis=1, level=0)
+        - pt.xs('R_SS', axis=1, level=0)
+        - pt.xs('RC', axis=1, level=0)
+    )
+    # 2️⃣ Recréer un MultiIndex de colonnes
+    rac.columns = pd.MultiIndex.from_product(
+        [['RAC'], rac.columns],
+        names=pt.columns.names
+    )
+    # 3️⃣ Concaténation au pivot
+    pt = pd.concat([pt, rac], axis=1)
+    pt.loc['100% santé', ('RAC', slice(None))] = 0
+
+    # 1️⃣ Calcul RC moyen acte
+    rc_moyen_acte = (
+    pt.xs('RC', axis=1, level=0)/pt.xs('nombre_acte', axis=1, level=0)
+    )
+    # 2️⃣ Recréer un MultiIndex de colonnes
+    rc_moyen_acte.columns = pd.MultiIndex.from_product(
+        [['rc_moyen_acte'], rc_moyen_acte.columns],
+        names=pt.columns.names
+    )
+    # 3️⃣ Concaténation au pivot
+    pt = pd.concat([pt, rc_moyen_acte], axis=1)
+
+
+    # 1️⃣ Calcul RAC moyen acte
+    rac_moyen_acte = (
+    pt.xs('RAC', axis=1, level=0)/pt.xs('nombre_acte', axis=1, level=0)
+    )
+    # 2️⃣ Recréer un MultiIndex de colonnes
+    rac_moyen_acte.columns = pd.MultiIndex.from_product(
+        [['rac_moyen_acte'], rac_moyen_acte.columns],
+        names=pt.columns.names
+    )
+    # 3️⃣ Concaténation au pivot
+    pt = pd.concat([pt, rac_moyen_acte], axis=1)
+
+
+    # Suppression du total en colonne uniquement
+    pt = pt.drop(columns='Total', level=1)
+    ordre=['100% santé','Maîtrisés','Libre','Total']
+    ordre_table=[]
+    for o in ordre:
+        if o in pt.index:
+            ordre_table.append(o)
+    pt = pt.reindex(ordre_table)
+
+    pt = pt.reindex(
+        columns=[
+            'id_bénéf',
+            'nombre_acte',
+            'RC',
+            'rc_moyen_acte',
+            'rac_moyen_acte'
+        ],
+        level=0
+    )
+    pt=pt.rename(columns={'id_bénéf':'Consommants',
+            'nombre_acte':'Nombre actes',
+            'RC':'Remboursement complémentaire',
+            'rc_moyen_acte':'Remboursement complémentaire par acte',
+            'rac_moyen_acte':'Reste à charge par acte'})
+    pt.columns.names=[None, None]
+    pt.index.name=None
+    pt=pt.map(formatM)
+    pt.index = pt.index.astype(str).str.capitalize()
+
+    return pt
+
+
+def style_pivot(pt):
+
+    def highlight_total(row):
+        if row.name == 'Total':
+            return ['background-color:#F7DFE2; color:#173A64; font-weight:bold'] * len(row)
+        else:
+            return ['background-color:#FFFFFF; color:#173A64; font-weight:bold'] * len(row)
+
+    # 🔹 Bordures blanches par bloc level 0 (CORRIGÉ)
+    border_styles = []
+    cols = pt.columns
+    level0 = cols.get_level_values(0)
+
+    for label in level0.unique():
+        locs = list((level0 == label).nonzero()[0])
+        start, end = locs[0], locs[-1]
+
+        border_styles = []
+
+        level0 = pt.columns.get_level_values(0)
+        n_cols = len(pt.columns)
+        
+        for label in level0.unique():
+            locs = list((level0 == label).nonzero()[0])
+            start, end = locs[0], locs[-1]  # 0-based pour python
+            start_css, end_css = start, end  # CSS nth-child est 1-based
+        
+            # On ignore la première colonne et la dernière
+            if start_css != 1 and end_css != n_cols:
+                # Bordure droite uniquement sur la dernière colonne du bloc
+                border_styles.append({
+                    'selector':
+                                f'th.col_heading.level1:nth-child({end_css}), '
+                                f'td:nth-child({end_css})',
+                    'props': [('border-right', '2px solid white')]
+                })
+
+    styler = (
+        pt.style
+        # alignement général
+        .set_properties(**{
+            'text-align': 'center',
+            'font-weight': 'bold'
+        })
+        # styles
+        .set_table_styles([
+            # level 0 (groupes)
+            {
+                'selector': 'th.col_heading.level0',
+                'props': [
+                    ('background-color', '#173A64'),
+                    ('color', 'white'),
+                    ('font-weight', 'bold'),
+                    ('text-align', 'center')
+                ]
+            },
+            # level 1 (années)
+            {
+                'selector': 'th.col_heading.level1',
+                'props': [
+                    ('background-color', '#0070C0'),
+                    ('color', 'white'),
+                    ('font-weight', 'bold'),
+                    ('text-align', 'center'),
+                    ('width', '90px')
+                ]
+            },
+            # index
+            {
+                'selector': 'th.row_heading',
+                'props': [
+                    ('font-weight', 'bold'),
+                    ('text-align', 'left'),
+                    ('background-color', '#173A64'),
+                    ('color', '#FFFFFF')
+                ]
+            },
+            # index Total
+            {
+                'selector': 'tbody tr:last-child th',
+                'props': [
+                    ('background-color', '#662064'),
+                    ('text-align', 'left'),
+                    ('color', 'white')
+                ]
+            },
+        ] + border_styles, overwrite=False)
+        # ligne TOTAL
+        .apply(highlight_total, axis=1)
+        # NA → tiret
+        .format(na_rep='-')
+    )
+
+    return styler
+
+def table_100_sante(df,Emplacement_stockage,backend):
+    
+    if df.empty:
+        st.write("Aucune donnée disponible pour le tableau 100% santé.")
+        return None
+    elif '100% santé' not in df.columns:
+        st.write("Aucune donnée 100% santé disponible pour le tableau.")
+        return None 
+    elif df['100% santé'].isna().all():
+        st.write("Aucune donnée 100% santé disponible pour le tableau.")
+        return None
+    elif df['Famille acte'].nunique() > 1:
+        st.write("Le tableau 100% santé ne peut être généré que pour une seule famille d'actes à la fois.")
+        return None
+    elif df['Famille acte'].iloc[0] not in ['Optique', 'Dentaire']:
+        st.write("Le tableau 100% santé n'est disponible que pour les familles d'actes Optique et Dentaire.")
+        return None
+    elif df['Famille acte'].iloc[0]=='Dentaire':
+        pt = table_dentaire(df)
+        table=style_pivot(pt)
+        st.dataframe(table)
+        try:
+            dfi.export(table, Emplacement_stockage+"/"+'table_100_sante_dentaire.jpg',dpi=100,table_conversion=backend)
+        except:
+            print("erreur de la librairie dfi")
+
+
+
