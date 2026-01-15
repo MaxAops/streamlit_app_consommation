@@ -533,7 +533,7 @@ def table_dentaire(df):
     return pt
 
 
-def style_pivot(pt):
+def style_pivot_dentaire(pt):
 
     def highlight_total(row):
         if row.name == 'Total':
@@ -628,6 +628,189 @@ def style_pivot(pt):
 
     return styler
 
+def formatM_with_zero(x):
+    """Formate les valeurs et remplace les 0 par '-'"""
+    if pd.isna(x):
+        return "-"
+    
+    # Si c'est déjà une chaîne (résultat de formatM), vérifier si c'est "0"
+    if isinstance(x, str):
+        if x in ['0', '0.0', '0,0', '0 €', '0€', '0.00', '0,00','-0']:
+            return "-"
+        return x
+    
+    # Si c'est un nombre
+    if x == 0 or x == 0.0 or x==-0:
+        return "-"
+    
+    # Sinon, appliquer le formatage normal
+    return formatM(x)
+
+
+def table_optique(df):
+    pt=pd.pivot_table(df[(df['annee_soins']>=2024) & (df['annee_soins']==df['annee_paiement']) & (df['mois_paiement']<=9) & (df['mois_soins']<=9) & (df['Sous famille'].isin(['Verres', 'Monture']))], 
+               values=['id_bénéf','nombre_acte','FR','R_SS','RC'],index=['Sous famille','100% santé'],columns='annee_soins',aggfunc={'id_bénéf':'nunique','nombre_acte':'sum',
+                                                                                                                                     'FR':'sum','R_SS':'sum','RC':'sum'},margins=True,margins_name='Total')
+
+    # 1️⃣ Calcul du RAC
+    rac = (
+        pt.xs('FR', axis=1, level=0)
+        - pt.xs('R_SS', axis=1, level=0)
+        - pt.xs('RC', axis=1, level=0)
+    )
+    # 2️⃣ Recréer un MultiIndex de colonnes
+    rac.columns = pd.MultiIndex.from_product(
+        [['RAC'], rac.columns],
+        names=pt.columns.names
+    )
+    # 3️⃣ Concaténation au pivot
+    pt = pd.concat([pt, rac], axis=1)
+
+    # 1️⃣ Calcul RC moyen acte
+    rc_moyen_acte = (
+    pt.xs('RC', axis=1, level=0)/pt.xs('nombre_acte', axis=1, level=0)
+    )
+    # 2️⃣ Recréer un MultiIndex de colonnes
+    rc_moyen_acte.columns = pd.MultiIndex.from_product(
+        [['rc_moyen_acte'], rc_moyen_acte.columns],
+        names=pt.columns.names
+    )
+    # 3️⃣ Concaténation au pivot
+    pt = pd.concat([pt, rc_moyen_acte], axis=1)
+
+
+    # 1️⃣ Calcul RAC moyen acte
+    rac_moyen_acte = (
+    pt.xs('RAC', axis=1, level=0)/pt.xs('nombre_acte', axis=1, level=0)
+    )
+    # 2️⃣ Recréer un MultiIndex de colonnes
+    rac_moyen_acte.columns = pd.MultiIndex.from_product(
+        [['rac_moyen_acte'], rac_moyen_acte.columns],
+        names=pt.columns.names
+    )
+    # 3️⃣ Concaténation au pivot
+    pt = pd.concat([pt, rac_moyen_acte], axis=1)
+
+
+    # Suppression du total en colonne uniquement
+    pt = pt.drop(columns='Total', level=1)
+
+
+    pt = pt.reindex(
+        columns=[
+            'id_bénéf',
+            'nombre_acte',
+            'RC',
+            'rc_moyen_acte',
+            'rac_moyen_acte'
+        ],
+        level=0
+    )
+    pt=pt.rename(columns={'id_bénéf':'Consommants',
+            'nombre_acte':'Nombre actes',
+            'RC':'Remboursement complémentaire',
+            'rc_moyen_acte':'Remboursement complémentaire par acte',
+            'rac_moyen_acte':'Reste à charge par acte'})
+    pt.columns.names=[None, None]
+    pt.index.names=[None, None]
+    pt=pt.round(0)
+    pt = pt.map(formatM_with_zero)
+    return pt
+
+
+HEADER_BG = "#17375E"
+SUBHEADER_BG = "#4F81BD"
+MONTURE_BG = "#F8E1E4"
+VERRES_BG = "#EAD1DC"
+TOTAL_BG = "#C27BA0"
+TEXT_WHITE = "white"
+
+def style_rows(row):
+    """Style les lignes selon la sous-famille"""
+    sous_famille = row.name[0]  # niveau 0 du MultiIndex
+    if sous_famille == "Monture":
+        return ["background-color: #F8E1E4;color:#173A64; font-weight: bold"] * len(row)
+    elif sous_famille == "Verres":
+        return ["background-color: #EAD1DC;color:#173A64; font-weight: bold"] * len(row)
+    elif sous_famille == "Total":
+        return ["background-color: #C27BA0; font-weight: bold;color:#FFFFFF"] * len(row)
+    return [""] * len(row)
+
+def style_index_css(pt):
+    """Style les cellules d'index selon la sous-famille"""
+    styles = []
+    for i, idx in enumerate(pt.index):
+        if idx[0] == "Monture":
+            styles.append({
+                "selector": f"tbody tr:nth-child({i+1}) th.row_heading",
+                "props": "background-color: #D86173; font-weight: bold;color:#FFFFFF"
+            })
+        elif idx[0] == "Verres":
+            styles.append({
+                "selector": f"tbody tr:nth-child({i+1}) th.row_heading",
+                "props": "background-color: #9B406D; font-weight: bold;color:#FFFFFF"
+            })
+        elif idx[0] == "Total":
+            styles.append({
+                "selector": f"tbody tr:nth-child({i+1}) th.row_heading",
+                "props": "background-color: #662064; font-weight: bold;color:#FFFFFF"
+            })
+    return styles
+
+
+def apply_pivot_style_optique(pt):
+    """Applique tous les styles au pivot table"""
+    styled_pt = (
+        pt.style
+          .apply(style_rows, axis=1)
+          .set_properties(
+              text_align="center",
+              width='90px'
+          )
+          .set_table_styles(
+              style_index_css(pt)                    # couleurs index lignes
+            + [
+                {
+                    "selector": "th.col_heading.level0",
+                    "props": [
+                        ("background-color", HEADER_BG),
+                        ("color", TEXT_WHITE),
+                        ("text-align", "center"),
+                        ("font-weight", "bold"),
+                        ("border", "2px solid white")
+                    ],
+                },
+                {
+                    "selector": "th.col_heading.level1",
+                    "props": [
+                        ("background-color", SUBHEADER_BG),
+                        ("color", TEXT_WHITE),
+                        ("text-align", "center"),
+                        ("border", "2px solid white")
+                    ],
+                },
+                {
+                    "selector": "th.row_heading",
+                    "props": [
+                        ("text-align", "left"),
+                        ("font-weight", "bold"),
+                        ("border-right", "2px solid white")
+                    ],
+                },
+                {
+                    "selector": "tbody tr:last-child th.row_heading",
+                    "props": [
+                        ("border-right", "none")
+                    ],
+                }
+            ],
+            overwrite=False
+          )
+          .format(na_rep="-")
+    )
+    return styled_pt
+
+
 def table_100_sante(df,Emplacement_stockage,backend):
     
     if df.empty:
@@ -647,10 +830,18 @@ def table_100_sante(df,Emplacement_stockage,backend):
         return None
     elif df['Famille acte'].iloc[0]=='Dentaire':
         pt = table_dentaire(df)
-        table=style_pivot(pt)
+        table=style_pivot_dentaire(pt)
         st.dataframe(table)
         try:
             dfi.export(table, Emplacement_stockage+"/"+'table_100_sante_dentaire.jpg',dpi=100,table_conversion=backend)
+        except:
+            print("erreur de la librairie dfi")
+    elif df['Famille acte'].iloc[0]=='Optique':
+        pt = table_optique(df)
+        table = apply_pivot_style_optique(pt)
+        st.dataframe(table)
+        try:
+            dfi.export(table, Emplacement_stockage+"/"+'table_100_sante_optique.jpg',dpi=100,table_conversion=backend)
         except:
             print("erreur de la librairie dfi")
 
