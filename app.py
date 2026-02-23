@@ -39,6 +39,12 @@ if page == "Charger les données":
     if st.session_state["donnees"] is not None:
         st.write("Aperçu des données :")
         st.dataframe(st.session_state["donnees"].head())
+        try:
+            for date_col in st.session_state["donnees"].columns:
+                if "date" in date_col.lower():
+                    st.write(f"{date_col} : {st.session_state['donnees'][date_col].min()} - {st.session_state['donnees'][date_col].max()}")
+        except Exception as e:
+            st.error(f"Erreur lors de l'affichage des informations sur les dates : {e}")
 
 elif page in ["Tables consommations", "Dispersion des coûts", "Analyse générale", "Comparaison entre survenances",
               "100% santé", "Etude sous famille","Etude prix", "Cadencements & PSAP"]:

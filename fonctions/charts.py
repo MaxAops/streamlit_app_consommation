@@ -53,9 +53,9 @@ def DispersionChart_year(df,Var,Famille,annee,qualitéGraphique,Emplacement_stoc
     dfannée=df[(df['annee_soins']==annee) & (df['annee_paiement']==annee)]
     TitleFamille=re.sub(r'[0-9]+. ', '', Famille)
     if Var=='RàC':
-        IdGconsommateurs=pd.pivot_table(dfannée, values=['FR','RC','R_SS'], index=[ID], 
+        IdGconsommateurs=pd.pivot_table(dfannée, values=['frais_reels','RC','rbt_ss'], index=[ID], 
                         aggfunc='sum', fill_value=0).reset_index()
-        IdGconsommateurs['RàC']=IdGconsommateurs['FR']-IdGconsommateurs['R_SS']-IdGconsommateurs['RC']
+        IdGconsommateurs['RàC']=IdGconsommateurs['frais_reels']-IdGconsommateurs['rbt_ss']-IdGconsommateurs['RC']
         IdGconsommateurs=IdGconsommateurs.sort_values(by=Var,ascending=False)
     else:
         IdGconsommateurs=pd.pivot_table(dfannée, values=[Var], index=[ID], 
@@ -132,28 +132,28 @@ def DispersionChart_year(df,Var,Famille,annee,qualitéGraphique,Emplacement_stoc
 
 def PlotVentilationCouts(df_data, annee,qualitéGraphique,Emplacement_stockage,ID):    
     # Dernière modif pour gérer les làl avec une ligne base une ligne option (problème pour le RàC total)
-    dfassureur= pd.pivot_table(df_data,values=['FR','R_SS','RC'],index=[ID,'Famille acte'],aggfunc='sum').reset_index()
+    dfassureur= pd.pivot_table(df_data,values=['frais_reels','rbt_ss','RC'],index=[ID,'famille_acte_aops'],aggfunc='sum').reset_index()
     dfassureur=dfassureur[dfassureur['RC']>0]
-    dfassureur['RàC']=dfassureur['FR']-dfassureur['R_SS']-dfassureur['RC']
+    dfassureur['RàC']=dfassureur['frais_reels']-dfassureur['rbt_ss']-dfassureur['RC']
     ##################################
 
-    Effectif=pd.pivot_table(dfassureur,values=[ID],index=['Famille acte'], aggfunc=lambda x: len(x.unique()))
+    Effectif=pd.pivot_table(dfassureur,values=[ID],index=['famille_acte_aops'], aggfunc=lambda x: len(x.unique()))
     Effectif=Effectif.reindex(Famille_acte_sorted(df_data))
 
     total_row = pd.DataFrame({ID: [dfassureur[ID].nunique()]}, index=['Total'])
     Effectif = pd.concat([Effectif,total_row], ignore_index=False)
-    table=pd.pivot_table(dfassureur,values=['R_SS','RC','RàC'],index=['Famille acte'], aggfunc=np.sum).round(2)#.round(2) permet d'arrondire les valeurs de la table à 2 chiffres après la virgule
+    table=pd.pivot_table(dfassureur,values=['rbt_ss','RC','RàC'],index=['famille_acte_aops'], aggfunc=np.sum).round(2)#.round(2) permet d'arrondire les valeurs de la table à 2 chiffres après la virgule
     table=table.reindex(Famille_acte_sorted(df_data))
-    total_row = pd.DataFrame({'R_SS': [dfassureur['R_SS'].sum()], 'RC': [dfassureur['RC'].sum()], 'RàC': [dfassureur['RàC'].sum()]}, index=['Total'])
+    total_row = pd.DataFrame({'rbt_ss': [dfassureur['rbt_ss'].sum()], 'RC': [dfassureur['RC'].sum()], 'RàC': [dfassureur['RàC'].sum()]}, index=['Total'])
     table = pd.concat([table,total_row], ignore_index=False)
-    table['R_SS']=table['R_SS']/Effectif[ID]
+    table['rbt_ss']=table['rbt_ss']/Effectif[ID]
     table['RC']=table['RC']/Effectif[ID]
     table['RàC']=table['RàC']/Effectif[ID]
-    table['total']=table['R_SS']+table['RC']+table['RàC']
+    table['total']=table['rbt_ss']+table['RC']+table['RàC']
     table[table < 0] = 0
-    table=table[['R_SS','RC','RàC','total']]
+    table=table[['rbt_ss','RC','RàC','total']]
     stacked_data = table.drop(columns=['total']).apply(lambda x: x*100/sum(x), axis=1).round(2)
-    stacked_data.rename(columns={'R_SS':'Remboursement Sécurité Sociale','RC':'Remboursement complémentaire','RàC':'Reste à charge'}, inplace=True)
+    stacked_data.rename(columns={'rbt_ss':'Remboursement Sécurité Sociale','RC':'Remboursement complémentaire','RàC':'Reste à charge'}, inplace=True)
     sns.set(rc={"figure.figsize":(12, 6)}) # taille graphique
     sns.set_style("whitegrid")
     ax=stacked_data.plot(kind='bar', stacked=True,color=[palette[4],palette[5], palette[6]]) # coeur du graphique 
@@ -218,7 +218,7 @@ def get_color(name, number):
     return pal
 def distributionFamilleActes(df,annee,Emplacement_stockage,qualitéGraphique):
     
-    pv = pd.pivot_table(df[df['annee_soins']==annee], index='Famille acte', values='RC', aggfunc='sum').reset_index()
+    pv = pd.pivot_table(df[df['annee_soins']==annee], index='famille_acte_aops', values='RC', aggfunc='sum').reset_index()
     pv['taux'] = pv['RC'] / pv['RC'].sum()
 
     pal_vi = get_color(palette, len(pv))
@@ -234,7 +234,7 @@ def distributionFamilleActes(df,annee,Emplacement_stockage,qualitéGraphique):
     plt.xlim(-lim, lim)
     plt.ylim(-lim, lim)
     # Print circles with labels including percentage
-    for circle, label, rc, color in zip(circles, rcs['Famille acte'], rcs['RC'], pal_vi):
+    for circle, label, rc, color in zip(circles, rcs['famille_acte_aops'], rcs['RC'], pal_vi):
         x, y, r = circle
         ax.add_patch(plt.Circle((x, y), r, alpha=0.9, color=color))
         # Calculate percentage
@@ -265,95 +265,6 @@ def distributionFamilleActes(df,annee,Emplacement_stockage,qualitéGraphique):
 
     st.pyplot(plt)
 
-"""
-def Evo_Cons_Moyenne(df,qualitéGraphique,Emplacement_stockage,ID):
-    df['annee_soins']=df['annee_soins'].fillna(0).astype(int)
-    if df['annee_soins'].nunique()>=3:
-        # table somme RC par Famille d'acte et année de survenance
-        table=pd.pivot_table(df,values='RC',index=['Famille acte'], columns='annee_soins', aggfunc=np.sum,fill_value=0).reindex(Famille_acte_sorted(df))
-        table=table[table.columns[-3:]]
-        df2 = pd.DataFrame(pd.pivot_table(df[df['annee_soins']>=table.columns.min()],values='RC',columns='annee_soins',aggfunc='sum').values, columns=table.columns[-3:], index=['Total']) # ajout de la ligne total
-        table=pd.concat([table,df2])
-
-        # Même chose que la table précédente mais cette fois ci avec les effectifs consommants
-        tableEff=pd.pivot_table(df,values=ID,index='Famille acte', columns='annee_soins', aggfunc=pd.Series.nunique).reindex(Famille_acte_sorted(df))
-        tableEff=tableEff[table.columns[-3:]]
-        df2 = pd.DataFrame(pd.pivot_table(df[df['annee_soins']>=table.columns.min()],values=ID,columns='annee_soins',aggfunc=pd.Series.nunique).values, columns=tableEff.columns[-3:], index=['Total'])
-        tableEff=pd.concat([tableEff,df2])
-
-        # calcule de la moyenne
-        table[table.columns[2]]=table[table.columns[2]]/tableEff[tableEff.columns[2]]
-        table[table.columns[1]]=table[table.columns[1]]/tableEff[tableEff.columns[1]]
-        table[table.columns[0]]=table[table.columns[0]]/tableEff[tableEff.columns[0]]
-
-
-        # calcule de l'évolution
-        table[str(table.columns[2])+'/'+str(table.columns[1])]=((table[table.columns[2]]-table[table.columns[1]])/table[table.columns[1]])*100
-        table[str(table.columns[2])+'/'+str(table.columns[0])]=((table[table.columns[2]]-table[table.columns[0]])/table[table.columns[0]])*100
-        table[str(table.columns[1])+'/'+str(table.columns[0])]=((table[table.columns[1]]-table[table.columns[0]])/table[table.columns[0]])*100
-                # Sélection des colonnes
-        table=table[[str(table.columns[1])+'/'+str(table.columns[0]),str(table.columns[2])+'/'+str(table.columns[0]),str(table.columns[2])+'/'+str(table.columns[1])]]
-
-        if 'Divers' in table.index:
-            table=table.drop(index='Divers')
-
-        sns.set(rc={"figure.figsize":(20, 8)})
-        sns.set( style = "whitegrid" ) 
-        ax=table.plot.bar(stacked=False,color=[palette[4],palette[5],palette[6]])# assignation de color spécifique (respect du code couleurb AOPS)
-        ax.legend(title='Survenances')
-        ax.set_xticklabels(table.index) # Nom indiqué sur l'axe x (Familles acte)
-        ax.set(xlabel ="",ylabel="") # titre axes x,y
-        # taille et rotation du texte affiché en x et y
-        plt.yticks(fontsize=14)
-        plt.xticks(fontsize=14)
-        plt.xticks(rotation= 10) # inclinaison texte (degrés)
-
-
-        ax.yaxis.set_major_formatter(StrMethodFormatter('{x:.0f}%')) # format légendes axe y
-
-        ymin, ymax = ax.get_ylim()
-        padding = (ymax - ymin) * 0.2  # 10% d'espace en plus
-        ax.set_ylim(ymin - padding, ymax + padding)
-
-        # Récupérer les étiquettes de l'axe des abscisses (axe x)
-        xtick_labels = plt.gca().get_xticklabels()
-
-        # Définir la position verticale des étiquettes
-        for label in xtick_labels:
-            label.set_y(label.get_position()[1] - 0.02)
-
-        # Placement des valeurs en % sur chaque bar
-        for bar in ax.patches:
-            # valeur >0
-            if bar.get_height()>=0 :
-                ax.annotate("+{:.1f}%".format(bar.get_height()),
-                            (bar.get_x() + bar.get_width() / 2,
-                                bar.get_height()+padding*0.25), ha='center', va='center',
-                            size=12, xytext=(0, 8),
-                            textcoords='offset points',rotation=90)
-            else :
-                # valeur <0
-                ax.annotate("{:.1f}%".format(bar.get_height()),
-                            (bar.get_x() + bar.get_width() / 2,
-                                bar.get_height()-padding*0.25), ha='center', va='top',
-                            size=12, xytext=(0, 8),
-                            textcoords='offset points',rotation=-90)
-        
-        for spine in plt.gca().spines.values():
-            spine.set_visible(False)
-
-        plt.grid(True, linestyle='--', alpha=0.3,color='grey')
-        
-        survenance=sorted(df['annee_soins'].unique())
-        # Différence entre les valeur >0 et <0 car les paramètres de placement sont différents (en dessous ou au dessus de la bar)
-        title='Evolution de la consommation moyenne par consommant des survenances '+ str(survenance[-3]) +' à '+ str(survenance[-1])
-        plt.title(title+'\n', fontsize=20)# taille du titre
-        plt.legend(loc='lower center', borderaxespad=-7,fontsize=16,ncol=3) # legendes dans le cadre, position, nombre de colonnes, taille
-
-        plt.savefig(Emplacement_stockage+title+'.jpg',bbox_inches='tight',dpi=qualitéGraphique)
-
-        st.pyplot(plt)
-"""
 
 def Evo_Cons_Moyenne(df, qualitéGraphique, Emplacement_stockage, ID):
     df['annee_soins'] = df['annee_soins'].fillna(0).astype(int)
@@ -367,12 +278,12 @@ def Evo_Cons_Moyenne(df, qualitéGraphique, Emplacement_stockage, ID):
     # Construction des tables RC et Effectifs
     # -----------------------------
     table = pd.pivot_table(
-        df, values='RC', index=['Famille acte'],
+        df, values='RC', index=['famille_acte_aops'],
         columns='annee_soins', aggfunc=np.sum, fill_value=0
     ).reindex(Famille_acte_sorted(df))
 
     tableEff = pd.pivot_table(
-        df, values=ID, index='Famille acte',
+        df, values=ID, index='famille_acte_aops',
         columns='annee_soins', aggfunc=pd.Series.nunique
     ).reindex(Famille_acte_sorted(df))
 
@@ -526,7 +437,7 @@ def EVO_Remboursement_moy(df,var,qualitéGraphique,Emplacement_stockage,ID):
     elif var=='RàC':
         name='RàC'
         ax.set_ylabel("RàC moyen")
-    elif var=='R_SS':
+    elif var=='rbt_ss':
         name='remboursement sécurité sociale'
         ax.set_ylabel("Remboursement sécurité sociale moyen")
     title='Evolution mensuelle du '+name +' moyen par consommant, par survenance'
@@ -574,7 +485,7 @@ def Evo_RC(df,qualitéGraphique,Emplacement_stockage):
     table = pd.pivot_table(
         df,
         values='RC',
-        index=['Famille acte', 'annee_soins'],
+        index=['famille_acte_aops', 'annee_soins'],
         aggfunc='sum',  # Use 'sum' as a string
         fill_value=0
     ).reset_index()
@@ -582,11 +493,11 @@ def Evo_RC(df,qualitéGraphique,Emplacement_stockage):
     # Calculate the percentage of 'RC' for each 'Famille acte' within each 'annee_soins'
     # Use groupby and transform to calculate the sum and avoid loop
     table['% sur l\'année T'] = table.groupby('annee_soins')['RC'].transform(lambda x: x / x.sum())
-    table=table[table['Famille acte']!='Divers']
+    table=table[table['famille_acte_aops']!='Divers']
     
     fig = plt.figure(figsize=(12, 6))
     sns.set( style = "whitegrid" )   # apparence du font du graphique
-    ax=sns.barplot(x="RC", y="Famille acte", hue='annee_soins', data=table, palette=palette[0:len(table['annee_soins'].unique())][::-1],order=ordre) # graphique construit à partir de la table précédente
+    ax=sns.barplot(x="RC", y="famille_acte_aops", hue='annee_soins', data=table, palette=palette[0:len(table['annee_soins'].unique())][::-1],order=ordre) # graphique construit à partir de la table précédente
     if df['annee_soins'].nunique()==1:
         title='Evolution du remboursement complémentaire pour les principaux postes et poids dans la survenances '+str(int(table['annee_soins'].unique()))
 
@@ -648,7 +559,7 @@ def EVO_Montant(df,var,qualitéGraphique,Emplacement_stockage):
     elif var=='RàC':
         name='RàC'
         ax.set_ylabel("Reste à charge")
-    elif var=='R_SS':
+    elif var=='rbt_base':
         name='remboursement sécurité sociale'
         ax.set_ylabel("Remboursement sécurité sociale")
     else:
@@ -677,102 +588,165 @@ def EVO_Montant(df,var,qualitéGraphique,Emplacement_stockage):
     st.pyplot(fig)
 
 
-
 def Panier_plot(d, ID, PanierVar, titre, qualitéGraphique, Emplacement_stockage):
-    d[PanierVar]=d[PanierVar].replace('maîtrisés','Maîtrisés')
+
+    # =========================
+    # Préparation des données
+    # =========================
+    d[PanierVar] = d[PanierVar].replace({'maîtrisés':'Maîtrisés','libre':'Libre'})
     sns.set(style="whitegrid")
-    fig, ax = plt.subplots(figsize=(12, 4))
 
-    # Création d'une table pivot
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    # =========================
+    # Fonction auto-fontsize
+    # =========================
+    def auto_fontsize(fig, base=2.2, dpi_ref=100, dpi=None, factor=1.0):
+        h = fig.get_size_inches()[1]
+        fs = h * base
+        if dpi:
+            fs *= dpi / dpi_ref
+        return fs * factor
+
+    base_fontsize = auto_fontsize(fig, dpi=qualitéGraphique)
+
+    # =========================
+    # Table pivot
+    # =========================
     table = pd.pivot_table(
-        d, values=[ID, 'nombre_acte', 'RC'], 
-        index=['annee_soins', PanierVar], 
-        aggfunc={ID: 'nunique', 'nombre_acte': 'sum', 'RC': 'sum'}
+        d,
+        values=[ID, 'nb_acte', 'RC'],
+        index=['annee_soins', PanierVar],
+        aggfunc={ID: 'nunique', 'nb_acte': 'sum', 'RC': 'sum'}
     ).reset_index()
-    table = table.rename(columns={'annee_soins': 'Année de survenance'})
-    table['RC moyen'] = round(table['RC'] / table['nombre_acte'], 2)
 
-    # Génération de la palette de couleurs dynamiquement
+    table = table.rename(columns={'annee_soins': 'Année de survenance'})
+    table['RC moyen'] = round(table['RC'] / table['nb_acte'], 2)
+
+    # =========================
+    # Palette dynamique
+    # =========================
     unique_vals = table[PanierVar].nunique()
     pal = palette[::3][:unique_vals]
 
-    # Création du scatter plot
-    ax = sns.scatterplot(
-        data=table, x="RC moyen", y="nombre_acte", hue=PanierVar,
-        palette=pal, size="RC", sizes=(1000, 10000), legend=False
+    # =========================
+    # Scatter plot
+    # =========================
+    sns.scatterplot(
+        data=table,
+        x="RC moyen",
+        y="nb_acte",
+        hue=PanierVar,
+        palette=pal,
+        size="RC",
+        sizes=(1000, 10000),
+        legend=False,
+        ax=ax
     )
 
-    # Formatage des axes
+    # =========================
+    # Axes
+    # =========================
     ax.yaxis.set_major_formatter(ticker.EngFormatter(''))
     ax.xaxis.set_major_formatter(ticker.EngFormatter('€'))
     ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
+    ax.tick_params(labelsize=base_fontsize* 1.2)
+
     x_min, x_max = ax.get_xlim()
     y_min, y_max = ax.get_ylim()
 
-    # Ajout de marges pour éviter les coupures
-    x_margin = (x_max - x_min) * 0.25
-    y_margin = (y_max - y_min) * 0.25
-    ax.set_xlim(x_min - x_margin, x_max + x_margin)
-    ax.set_ylim(y_min - y_margin, y_max + y_margin)
+    ax.set_xlim(x_min - (x_max - x_min) * 0.25, x_max + (x_max - x_min) * 0.25)
+    ax.set_ylim(y_min - (y_max - y_min) * 0.25, y_max + (y_max - y_min) * 0.25)
 
+    # =========================
+    # Taille des labels (densité)
+    # =========================
+    n_points = len(table)
+    density_factor = max(0.7, min(1.0, 8 / n_points))
+    label_fontsize = base_fontsize * density_factor
+
+    # =========================
+    # Labels des bulles
+    # =========================
     text_positions = []
 
     for i in range(len(table)):
         x = table["RC moyen"].iloc[i]
-        y = table["nombre_acte"].iloc[i]
-        text = f"{table['Année de survenance'][i]}\n {table[PanierVar][i]} \n RC: {formatM(table['RC'][i])}€"
-        
-        label = ax.text(
-            x, y, text,
-            ha='center', va='center', fontsize=9, fontweight='bold',
-            bbox=dict(boxstyle='round', fc='white', ec='black', alpha=0.7)
+        y = table["nb_acte"].iloc[i]
+
+        text = (
+            f"{table['Année de survenance'][i]}\n"
+            f"{table[PanierVar][i]}\n"
+            f"RC : {formatM(table['RC'][i])} €"
         )
 
-        text_positions.append((x, y, label))
+        label = ax.text(
+            x, y, text,
+            ha='center',
+            va='center',
+            fontsize=label_fontsize,
+            fontweight='bold',
+            bbox=dict(
+                boxstyle='round',
+                fc='white',
+                ec='black',
+                alpha=0.7
+            )
+        )
 
-    # Nécessaire pour avoir les bounding boxes correctes
+        text_positions.append(label)
+
+    # =========================
+    # Ajustement des chevauchements
+    # =========================
     fig.canvas.draw()
 
-    # Vérification du chevauchement
-    problematic_labels = []
-    for i, (x1, y1, text1) in enumerate(text_positions):
-        bbox1 = text1.get_window_extent(renderer=fig.canvas.get_renderer())
-
-        for j, (x2, y2, text2) in enumerate(text_positions):
-            if i >= j:
-                continue
-
-            bbox2 = text2.get_window_extent(renderer=fig.canvas.get_renderer())
-
-            if bbox1.overlaps(bbox2):
-                problematic_labels.append(text1)
-                problematic_labels.append(text2)
-
-    # Ajustement uniquement des étiquettes qui se chevauchent
     adjust_text(
-        problematic_labels,
+        text_positions,
         ax=ax,
         expand=(1.05, 1.2),
-        arrowprops=dict(arrowstyle="-", color='black', lw=0),
+        arrowprops=dict(arrowstyle="-", lw=0),
         force_points=(0.3, 0.5),
         force_text=(0.5, 0.5),
         only_move={'points': 'y', 'text': 'xy'}
     )
 
-    for spine in plt.gca().spines.values():
-            spine.set_visible(False)
+    # =========================
+    # Style final
+    # =========================
+    for spine in ax.spines.values():
+        spine.set_visible(False)
 
-    plt.grid(True, linestyle='--', alpha=0.3,color='grey')
+    ax.grid(True, linestyle='--', alpha=0.3, color='grey')
 
-    # Paramètres des axes et titre
-    ax.set_xlabel('Remboursement complémentaire moyen', fontsize=11)
-    ax.set_ylabel("Nombre d'actes", fontsize=11)
-    plt.title(f"100% santé - {titre}", fontsize=16, fontname="Calibri")
-    plt.subplots_adjust(top=1.25)
+    ax.set_xlabel(
+        'Remboursement complémentaire moyen',
+        fontsize=base_fontsize* 1.2
+    )
 
-    # Sauvegarde et affichage
-    plt.savefig(Emplacement_stockage+"/" + titre + '.jpg', bbox_inches='tight', dpi=qualitéGraphique)
+    ax.set_ylabel(
+        "Nombre d'actes",
+        fontsize=base_fontsize* 1.2
+    )
+
+    ax.set_title(
+        f"100% santé - {titre}",
+        fontsize=base_fontsize * 1.5,
+        fontname="Calibri"
+    )
+
+    plt.tight_layout()
+
+    # =========================
+    # Sauvegarde
+    # =========================
+    plt.savefig(
+        f"{Emplacement_stockage}/{titre}.jpg",
+        dpi=qualitéGraphique,
+        bbox_inches='tight'
+    )
+
     st.pyplot(fig)
 
 
@@ -782,36 +756,36 @@ def Panier_plot_ventilation(d, ID, PanierVar, titre, qualitéGraphique, Emplacem
     d[PanierVar]=d[PanierVar].replace('libre','Libre')
     # Table initiale
     table1 = pd.pivot_table(
-        d, values=[ID, 'nombre_acte', 'RC'], 
-        index=['annee_soins', PanierVar,'Sous famille'], 
-        aggfunc={ID: pd.Series.nunique, 'nombre_acte': 'sum', 'RC': 'sum'}
+        d, values=[ID, 'nb_acte', 'RC'], 
+        index=['annee_soins', PanierVar,'sous_famille'], 
+        aggfunc={ID: pd.Series.nunique, 'nb_acte': 'sum', 'RC': 'sum'}
     ).reset_index()
 
     table= pd.pivot_table(
-            d, values=[ID, 'nombre_acte', 'RC'], 
+            d, values=[ID, 'nb_acte', 'RC'], 
             index=['annee_soins', PanierVar], 
-            aggfunc={ID: pd.Series.nunique, 'nombre_acte': 'sum', 'RC': 'sum'}
+            aggfunc={ID: pd.Series.nunique, 'nb_acte': 'sum', 'RC': 'sum'}
         ).reset_index()
     
-    res=pd.merge(table1[['annee_soins',PanierVar,'RC','Sous famille']],table[['annee_soins',PanierVar,'RC']],on=['annee_soins',PanierVar],how='left')
+    res=pd.merge(table1[['annee_soins',PanierVar,'RC','sous_famille']],table[['annee_soins',PanierVar,'RC']],on=['annee_soins',PanierVar],how='left')
     res['taux']=round(res['RC_x']/res['RC_y']*100,2)
-    res[["annee_soins", PanierVar,"Sous famille","taux"]]
+    res[["annee_soins", PanierVar,"sous_famille","taux"]]
 
     ### Table des contenant les montants d'utilisation de sf par panier
-    df_m = res[["annee_soins", 	PanierVar,"Sous famille","RC_x"]]
+    df_m = res[["annee_soins", 	PanierVar,"sous_famille","RC_x"]]
     # Pivoter le DataFrame pour faciliter le traçage
-    pivot_df_m = df_m.pivot(index=[PanierVar,'annee_soins'], columns=['Sous famille'], values='RC_x').fillna(0)
+    pivot_df_m = df_m.pivot(index=[PanierVar,'annee_soins'], columns=['sous_famille'], values='RC_x').fillna(0)
 
     ### Table des contenant les pourcentage d'utilisation de sf par panier
-    df = res[["annee_soins", 	PanierVar,"Sous famille","taux"]]
+    df = res[["annee_soins", 	PanierVar,"sous_famille","taux"]]
     # Pivoter le DataFrame pour faciliter le traçage
-    pivot_df = df.pivot(index=[PanierVar,'annee_soins'], columns=['Sous famille'], values='taux').fillna(0)
+    pivot_df = df.pivot(index=[PanierVar,'annee_soins'], columns=['sous_famille'], values='taux').fillna(0)
 
-    if (PanierVar=='100% santé') & ('Dentaire' in d['Famille acte'].unique()):
+    if (PanierVar=='sante_100') and ('Dentaire' in d['famille_acte_aops'].unique()):
         ordre_categorie = ['100% santé', 'Maîtrisés', 'Libre']
         # Convertir le niveau 'categorie' en catégorie ordonnée
         pivot_df.index = pd.MultiIndex.from_arrays([
-            pd.Categorical(pivot_df.index.get_level_values('100% santé'), categories=ordre_categorie, ordered=True),
+            pd.Categorical(pivot_df.index.get_level_values('sante_100'), categories=ordre_categorie, ordered=True),
             pivot_df.index.get_level_values('annee_soins')
         ], names=pivot_df.index.names)
         
@@ -922,7 +896,7 @@ def Sous_famille_comparaison_montants(data, var,qualitéGraphique, Emplacement_s
 
     plt.xlabel(f"Tranches de montants en € - {var}")
     plt.ylabel('Nombre d\'occurrences')
-    titre=f"Histogramme des montants par tranche - {data['Sous famille'].unique()[0]} - {var}"
+    titre=f"Histogramme des montants par tranche - {data['sous_famille'].unique()[0]} - {var}"
     plt.title(titre)
     plt.xticks(rotation=45)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
@@ -935,41 +909,40 @@ def Sous_famille_comparaison_montants(data, var,qualitéGraphique, Emplacement_s
 def etude_composante_dépense(data, variable_prix, sf,Emplacement_stockage,qualitéGraphique, layout='vertical'):
     data['annee_soins'] = data['annee_soins'].astype(int).astype(str)
 
-    if 'nombre_acte' not in data.columns:
-        print('Variable "nombre_acte" manquante')
+    if 'nb_acte' not in data.columns:
+        print('Variable "nb_acte" manquante')
         return
     else:
         # Agrégations
         inter = pd.pivot_table(
             data,
-            values=[variable_prix, 'nombre_acte'],
-            index=['id_bénéf', 'annee_soins'],
+            values=[variable_prix, 'nb_acte'],
+            index=['id_beneficiaire', 'annee_soins'],
             aggfunc='sum'
         ).reset_index()
 
         inter_bis = pd.pivot_table(
             inter,
-            values=[variable_prix, 'nombre_acte'],
+            values=[variable_prix, 'nb_acte'],
             index='annee_soins',
             aggfunc='mean'
         )
 
         inter_ = pd.pivot_table(
             inter,
-            values=[variable_prix, 'nombre_acte'],
+            values=[variable_prix, 'nb_acte'],
             index='annee_soins',
             aggfunc='sum'
         )
-        inter_['prix_actes'] = inter_[variable_prix] / inter_['nombre_acte']
-
+        inter_['prix_actes'] = inter_[variable_prix] / inter_['nb_acte']
         df_graph = pd.concat([inter_bis, inter_[['prix_actes']]], axis=1).reset_index()
 
         # Nom variable
         if variable_prix == 'RC':
             nom_var = 'remboursement complémentaire'
-        elif variable_prix == 'R_SS':
+        elif variable_prix == 'rbt_ss':
             nom_var = 'remboursement sécurité sociale'
-        elif variable_prix == 'FR':
+        elif variable_prix == 'frais_reels':
             nom_var = 'Frais réels'
         else:
             nom_var = variable_prix
@@ -998,7 +971,7 @@ def etude_composante_dépense(data, variable_prix, sf,Emplacement_stockage,quali
         infos = [
             ("Coût moyen / personne (€)", variable_prix, '#2B3885', 'o', '-'),
             ("Coût moyen / acte (€)", 'prix_actes', '#D86173', 's', '-'),
-            ("Nombre d'actes moyen / personne", 'nombre_acte', '#EE9744', '^', '-')
+            ("Nombre d'actes moyen / personne", 'nb_acte', '#EE9744', '^', '-')
         ]
 
         for ax, (titre_graph, col, couleur, marker, style) in zip(axes, infos):
@@ -1030,16 +1003,16 @@ def etude_composante_dépense(data, variable_prix, sf,Emplacement_stockage,quali
 def dispertion_chart_comparaison(df,var_montant,element_titre,qualitéGraphique, Emplacement_stockage):
 
     
-    table=pd.pivot_table(df,values=[var_montant,'nombre_acte'],index=['id_bénéf','annee_soins'],aggfunc='sum').reset_index()
+    table=pd.pivot_table(df,values=[var_montant,'nb_acte'],index=['id_beneficiaire','annee_soins'],aggfunc='sum').reset_index()
     table=table[table[var_montant]>0]
     
     bins, labels=calculer_bins_labels_equilibres(table, var_montant, min_pct=0.05, max_pct=0.3, max_bins=20, multiple=5)
     table['Tranche_montant'] = pd.cut(table[var_montant], bins=bins, labels=labels, right=False)
     
-    t=pd.pivot_table(table,values=[var_montant,'nombre_acte','id_bénéf'],index=['Tranche_montant','annee_soins'],observed=False,aggfunc={var_montant:'sum','nombre_acte':'sum','id_bénéf':pd.Series.nunique}).reset_index()
+    t=pd.pivot_table(table,values=[var_montant,'nb_acte','id_beneficiaire'],index=['Tranche_montant','annee_soins'],observed=False,aggfunc={var_montant:'sum','nb_acte':'sum','id_beneficiaire':pd.Series.nunique}).reset_index()
     t[var_montant]=t[var_montant].fillna(0)
-    t['nombre_acte']=t['nombre_acte'].fillna(0)
-    t['id_bénéf']=t['id_bénéf'].fillna(0)
+    t['nb_acte']=t['nb_acte'].fillna(0)
+    t['id_beneficiaire']=t['id_beneficiaire'].fillna(0)
     
     # Créer le graphique à barres
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -1059,7 +1032,7 @@ def dispertion_chart_comparaison(df,var_montant,element_titre,qualitéGraphique,
     # Ajouter les annotations id_bénéf au-dessus de chaque barre
     for p in bar_plot.patches:
         val_rc = p.get_height()
-        match = t.loc[t[var_montant] == val_rc, 'id_bénéf']
+        match = t.loc[t[var_montant] == val_rc, 'id_beneficiaire']
         
         if (not match.empty) and (val_rc>0):
             id_benef = match.values[0]
@@ -1096,83 +1069,3 @@ def dispertion_chart_comparaison(df,var_montant,element_titre,qualitéGraphique,
     plt.savefig(Emplacement_stockage+"/" +"dispertion_conso_"+ ''.join(element_titre) + '.jpg', bbox_inches='tight', dpi=qualitéGraphique)
     st.pyplot(fig)
 
-
-"""
-    def PlotVentilationCouts_sf(df_data, annee,ID,Emplacement_stockage,qualitéGraphique):    
-    # Dernière modif pour gérer les làl avec une ligne base une ligne option (problème pour le RàC total)
-    dfassureur= pd.pivot_table(df_data,values=['FR','R_SS','RC'],index=[ID,'Sous famille'],aggfunc='sum').reset_index()
-    dfassureur=dfassureur[dfassureur['RC']>0]
-    dfassureur['RàC']=dfassureur['FR']-dfassureur['R_SS']-dfassureur['RC']
-    ##################################
-
-    Effectif=pd.pivot_table(dfassureur,values=[ID],index=['Sous famille'], aggfunc=lambda x: len(x.unique()))
-    #Effectif=Effectif.reindex(Famille_acte_sorted(df_data))
-
-    total_row = pd.DataFrame({ID: [dfassureur[ID].nunique()]}, index=['Total'])
-    Effectif = pd.concat([Effectif,total_row], ignore_index=False)
-    table=pd.pivot_table(dfassureur,values=['R_SS','RC','RàC'],index=['Sous famille'], aggfunc=np.sum).round(2)#.round(2) permet d'arrondire les valeurs de la table à 2 chiffres après la virgule
-    #table=table.reindex(Famille_acte_sorted(df_data))
-    total_row = pd.DataFrame({'R_SS': [dfassureur['R_SS'].sum()], 'RC': [dfassureur['RC'].sum()], 'RàC': [dfassureur['RàC'].sum()]}, index=['Total'])
-    table = pd.concat([table,total_row], ignore_index=False)
-    table['R_SS']=table['R_SS']/Effectif[ID]
-    table['RC']=table['RC']/Effectif[ID]
-    table['RàC']=table['RàC']/Effectif[ID]
-    table['total']=table['R_SS']+table['RC']+table['RàC']
-    table[table < 0] = 0
-    table=table[['R_SS','RC','RàC','total']]
-    stacked_data = table.drop(columns=['total']).apply(lambda x: x*100/sum(x), axis=1).round(2)
-    stacked_data.rename(columns={'R_SS':'Remboursement Sécurité Sociale','RC':'Remboursement complémentaire','RàC':'Reste à charge'}, inplace=True)
-    sns.set(rc={"figure.figsize":(12, 6)}) # taille graphique
-    sns.set_style("whitegrid")
-    ax=stacked_data.plot(kind='bar', stacked=True,color=[palette[4],palette[5], palette[6]]) # coeur du graphique 
-    plt.legend(loc='lower center', borderaxespad=-7,ncol=len(stacked_data.columns)) # legendes dans le cadre, position, nombre de colonnes, taille
-    title='Répartition des dépenses de santé et coût moyen  '+ str(annee)+ '  par sous familles d\'actes'
-    plt.title(title+'\n', fontsize=21,fontname="Calibri",fontweight="bold") 
-    # Taille texte axe x, y 
-    #plt.yticks(fontsize=16)
-    #plt.xticks(fontsize=16)
-    plt.xticks(rotation= 10) # inclinaison texte (degrés)
-
-    ax.yaxis.set_major_formatter(StrMethodFormatter('{x:.0f}%')) # Format texte legende axe y
-    ax.set(xlabel ="",ylabel="") # titre axes x, y
-
-    rect = mpatches.Rectangle((0, 0), 1, 1, fc="#2A0C53", alpha=1)
-
-    # Partie du code permettant de positionner les valeurs moyennes et le total au sommet
-    columns=table.columns
-    index=table.index
-    i=0
-    j=0
-    for p in ax.patches: 
-        # moyenne
-        width, height = p.get_width(), p.get_height()
-        x, y = p.get_xy() 
-        if table[columns[j]][index[i]]!=0:
-            ax.text(x+width/2, 
-                    y+height/2, 
-                    formatM(table[columns[j]][index[i]])+"€",
-                    #"{:,.2f}€".format(table[columns[j]][index[i]]), # format text
-                    horizontalalignment='center', # position par rapport à la position visée
-                    verticalalignment='center', # position par rapport à la position visée
-                color='white',fontweight='bold') # couleur, taille et style texte
-        if (j==2): 
-            # total
-            ax.annotate(formatM(table['total'][i])+"€",
-                #"{:.2f} €".format(table['total'][i], '.4f'),
-                        (p.get_x() + p.get_width() / 2,
-                            100), ha='center', va='center',
-                         xytext=(0, 14),color='white',
-                        textcoords='offset points',fontweight='bold',
-                       # bbox ={'facecolor':'gold','alpha':0.7, 'pad':2})
-            bbox=dict(boxstyle="square,pad=0.3", fc=rect.get_facecolor(), alpha=rect.get_alpha()))
-        if i==len(table)-1:
-            i=0
-            j=j+1
-        else:
-            i=i+1
-            j=j
-
-    # Sauvegarde et affichage
-    plt.savefig(Emplacement_stockage + title + '.jpg', bbox_inches='tight', dpi=qualitéGraphique)
-    st.pyplot(fig)
-"""

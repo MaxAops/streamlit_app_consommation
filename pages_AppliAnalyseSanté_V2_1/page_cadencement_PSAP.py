@@ -66,7 +66,7 @@ def cadencement_PSAP():
             [1,2,3,4],default=[1,2,3,4])
             
         with col6:
-            Identifiant_personne=st.text_input("Variable identifiant personne", 'id_bénéf')
+            Identifiant_personne=st.text_input("Variable identifiant personne", 'id_beneficiaire')
             if 'assureur' in df.columns:
                 Assureur = st.multiselect("Séléctionner le/les assureur(s) souhaité(s)",
                 df['assureur'].unique(),default=df['assureur'].unique())

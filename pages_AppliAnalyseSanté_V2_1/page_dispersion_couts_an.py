@@ -12,8 +12,8 @@ choix_annee=[2016,2017,2018,2019,2020,2021, 2022, 2023,2024,2025]
 def Dispersion():
     ID = st.sidebar.radio(
     "Sélectionnez l'identifiant à concidérer",
-    ('id_bénéf', 'id_assuré'))
-    var=st.selectbox('Séléctionnez le type de montant : RC, Frais réels ...', ['RC','FR','R_SS','RàC'])
+    ('id_beneficiaire', 'id_assuré'))
+    var=st.selectbox('Séléctionnez le type de montant : RC, Frais réels ...', ['RC','frais_réels','rbt_ss','RàC'])
     # Créer des widgets pour permettre à l'utilisateur de choisir l'année et l'intervalle de mois
     unique_annees = choix_annee
     all_annees_selected = st.sidebar.selectbox('Voulez-vous inclure uniquement des années spécifiques ? Si la réponse est oui, veuillez cocher la case ci-dessous, puis sélectionnez la ou les année(s) dans le nouveau champ.', ['Inclure toutes les années disponibles','Sélection manuelle'])
@@ -29,8 +29,8 @@ def Dispersion():
                 # Charger les données CSV à partir du fichier
                 data=workOnData.load_data(st.session_state["donnees"],annees,mois_min, mois_max)
                 st.subheader('Dispersion remboursements complémentaires')
-                for l in data['Famille acte'].unique():
-                    data_filtree = data[data['Famille acte'] == l]
+                for l in data['famille_acte_aops'].unique():
+                    data_filtree = data[data['famille_acte_aops'] == l]
                     if not data_filtree.empty:
                         #charts.DispersionChart_year(data_filtree, var, l, annee, st.session_state["Qualité images"],st.session_state["repertoire_images"],ID)
                         charts.dispertion_chart_comparaison(data_filtree,var,[l], st.session_state["Qualité images"],st.session_state["repertoire_images"])

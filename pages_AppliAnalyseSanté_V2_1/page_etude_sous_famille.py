@@ -19,17 +19,17 @@ def etude_sous_famille():
         annees=unique_annees
     mois_min, mois_max = st.sidebar.slider("Plage de mois", min_value=1, max_value=12, value=(1, 12))
 
-    var=st.selectbox('Séléctionnez le type de montant : RC, Frais réels ...', ['RC','FR','R_SS','RàC'])
+    var=st.selectbox('Séléctionnez le type de montant : RC, Frais réels ...', ['RC','frais_reels','rbt_ss','RàC'])
 
-    if "Sous famille" in list(st.session_state["donnees"].columns):
-        select_sf = st.multiselect('Séléctionnez la ou les sous famille(s)', list(st.session_state["donnees"]['Sous famille'].unique()))
+    if "sous_famille" in list(st.session_state["donnees"].columns):
+        select_sf = st.multiselect('Séléctionnez la ou les sous famille(s)', list(st.session_state["donnees"]['sous_famille'].unique()))
         # Afficher la variable sélectionnée sous forme de liste
         
         #sf = [select_sf]
     else : 
          st.write("La colonne Sous famille n'est pas présente dans le jeux de données")
     
-    if "Majoration" in list(st.session_state["donnees"].columns): 
+    if "majoration" in list(st.session_state["donnees"].columns): 
         
         on = st.toggle("Exclure les actes identifiés comme des majorations")
     else:
@@ -42,7 +42,7 @@ def etude_sous_famille():
             # Charger les données CSV à partir du fichier
             data=workOnData.load_data(st.session_state["donnees"],annees,mois_min, mois_max, Sous_famille=select_sf)
             if on :
-                data=data[data['Majoration'].isna()]
+                data=data[data['majoration'].isna()]
             if var=='RàC':
                 data=workOnData.groupby_acte(data)
             if not data.empty:

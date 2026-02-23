@@ -14,7 +14,7 @@ def tableConso():
     st.title("Tables consommations par familles")
     ID = st.sidebar.radio(
     "Sélectionnez l'identifiant à concidérer",
-    ('id_bénéf', 'id_assuré'))
+    ('id_beneficiaire', 'id_assuré'))
     # Créer des widgets pour permettre à l'utilisateur de choisir l'année et l'intervalle de mois
     annee = st.sidebar.selectbox("Année", choix_annee)
     mois_min, mois_max = st.sidebar.slider("Plage de mois", min_value=1, max_value=12, value=(1, 12))
@@ -47,12 +47,12 @@ def tableConso():
 
     columns = list(st.session_state["donnees"].columns)
     # Valeur par défaut souhaitée
-    Mesure_def = "Sous famille"
+    Mesure_def = "sous_famille"
     # Calcul de l'index correspondant
     index_mesure = columns.index(Mesure_def) if Mesure_def in columns else 0
 
     # Valeur par défaut souhaitée
-    boucle_def = "Famille acte"
+    boucle_def = "famille_acte_aops"
     # Calcul de l'index correspondant
     index_boucle = columns.index(boucle_def) if boucle_def in columns else 0
 
@@ -76,15 +76,17 @@ def tableConso():
                             data_1=data1[data1[boucle]==V_boucle]
                             data_2=data2[data2[boucle]==V_boucle]
                             if data_1 is not None and data_2 is not None:
-                                table_SF_1=build_conso_tables.TableConso_par_sous_familles(data_1,st.session_state["repertoire_images"],ID,Mesure,V_boucle)
-                                table_SF_2=build_conso_tables.TableConso_par_sous_familles(data_2,st.session_state["repertoire_images"],ID,Mesure,V_boucle)
+                                table_SF_1=build_conso_tables.TableConso_par_sous_familles(data_1,st.session_state["repertoire_images"],ID,Mesure,V_boucle,backend)
+                                table_SF_2=build_conso_tables.TableConso_par_sous_familles(data_2,st.session_state["repertoire_images"],ID,Mesure,V_boucle,backend)
                                 build_conso_tables.ajouter_tableau_excel(f"{st.session_state["repertoire_images"]}table_conso.xlsx", table_SF_1.rename(columns={table_SF_1.columns[0]:str(V_boucle)}).set_index(str(V_boucle),drop=True), f"Conso par Sf {str(annee)[-2:]} vs {str(annee-1)[-2:]}", ecart_table, 0)
                                 build_conso_tables.ajouter_tableau_excel(f"{st.session_state["repertoire_images"]}table_conso.xlsx", table_SF_2.rename(columns={table_SF_2.columns[0]:str(V_boucle)}).set_index(str(V_boucle),drop=True), f"Conso par Sf {str(annee)[-2:]} vs {str(annee-1)[-2:]}", ecart_table,len(table_SF_1.columns)+3)
                                 ecart_table=ecart_table+max(len(table_SF_1),len(table_SF_2))+3
-                                build_conso_tables.comparaison_sf_n_n_1(table_SF_1,table_SF_2,st.session_state["repertoire_images"],annee,Mesure,V_boucle)
-
+                                build_conso_tables.comparaison_sf_n_n_1(table_SF_1,table_SF_2,st.session_state["repertoire_images"],annee,Mesure,V_boucle,backend)
+                            else:
+                                st.write(f"Pas de donnée pour la catégorie : {V_boucle}")
                         except:
                             st.write(f"Données manquantes pour la catégorie : {V_boucle}")
+
                 else:
                     st.write("Pas de donnée")
 

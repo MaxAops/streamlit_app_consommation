@@ -33,8 +33,8 @@ def charger_donnees():
     if fichier is not None:
         try:
             df = load_csv(fichier)
-            df["id_bénéf"] = pad_column_with_zeros(df["id_bénéf"])
-            df["id_assuré"] = pad_column_with_zeros(df["id_assuré"])
+            df["id_beneficiaire"] = pad_column_with_zeros(df["id_beneficiaire"])
+            df["id_assure"] = pad_column_with_zeros(df["id_assure"])
 
             st.session_state["donnees"] = df
             st.success("Données chargées avec succès !")

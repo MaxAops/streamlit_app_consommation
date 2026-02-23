@@ -16,14 +16,14 @@ sorted_Famille={'Hospitalisation':1,
 # Fonction pour charger les données
 @st.cache_data
 def load_csv(file):
-    return pd.read_csv(file)
+    return pd.read_csv(file,sep=';')
 
 
 
 def Famille_acte_sorted(df):
     Famille_acte_sorted = []
     for i in list(sorted_Famille.keys()):
-        if i in df['Famille acte'].unique():
+        if i in df['famille_acte_aops'].unique():
             Famille_acte_sorted.append(i)
     return Famille_acte_sorted
 
@@ -49,14 +49,14 @@ def load_data(init_data,annee,mois_min, mois_max,famille_actes=None, Sous_famill
                                         (data["annee_paiement"]==data["annee_soins"]) &
                                         (data["mois_soins"].between(mois_min, mois_max)) &
                                         (data["mois_paiement"].between(mois_min, mois_max)) &
-                                    (data["annee_soins"] == data["annee_paiement"]) & (data['Famille acte'].isin(famille_actes))]
+                                    (data["annee_soins"] == data["annee_paiement"]) & (data['famille_acte_aops'].isin(famille_actes))]
     elif Sous_famille is not None:
         data_filtre = data[(data['RC']!=0) &
                                         (data["annee_soins"].isin(annee)) &
                                         (data["annee_paiement"]==data["annee_soins"]) &
                                         (data["mois_soins"].between(mois_min, mois_max)) &
                                         (data["mois_paiement"].between(mois_min, mois_max)) &
-                                    (data["annee_soins"] == data["annee_paiement"]) & (data['Sous famille'].isin(Sous_famille))]
+                                    (data["annee_soins"] == data["annee_paiement"]) & (data['sous_famille'].isin(Sous_famille))]
     
     else:
         data_filtre = data[(data['RC']!=0) &
@@ -235,8 +235,8 @@ def rename_cat(data, selected_var):
 
 def groupby_acte(df):
     
-    res_df=pd.pivot_table(df,values=['FR','R_SS','RC','nombre_acte'],index=['date_soins','annee_soins','code_acte','Sous famille','id_bénéf'],aggfunc='sum').reset_index()
-    res_df['RàC']=res_df['FR']-res_df['R_SS']-res_df['RC']
+    res_df=pd.pivot_table(df,values=['frais_reels','rbt_ss','RC','nb_acte'],index=['date_soins','annee_soins','code_acte','sous_famille','id_beneficiaire'],aggfunc='sum').reset_index()
+    res_df['RàC']=res_df['frais_reels']-res_df['rbt_ss']-res_df['RC']
     return res_df
 
 
@@ -352,76 +352,7 @@ def optimal_bins(data, min_bin_size=0.05, max_bin_size=0.2, initial_bins=20):
 
     return bins, labels
 
-"""
-def calculer_bins_labels_equilibres(df, var, min_pct=0.05, max_pct=0.3, max_bins=20, multiple=5):
 
-    # min_pct : proportion minimum de donnée dans une tranche
-    # max_pct : proportion max de donnée dans une tranche
-    # multiple : arrondi des bornes des tranche
-
-    q1, q3 = np.percentile(df[var], [15, 85])
-    iqr = q3 - q1
-    lower_bound = q1 - 1.5 * iqr
-    upper_bound = q3 + 1.5 * iqr
-
-    df_cleaned = df[(df[var] >= lower_bound) & (df[var] <= upper_bound)]
-    n = len(df_cleaned)
-
-    bin_width = 2 * iqr / np.cbrt(n)
-    bin_width = max(multiple, round(bin_width / multiple) * multiple)
-
-    # Pas de borne négative
-    min_val = max(0, (df_cleaned[var].min() // multiple) * multiple)
-    max_val = np.ceil(df_cleaned[var].max() / multiple) * multiple
-
-    bins = list(range(int(min_val), int(max_val) + int(bin_width), int(bin_width)))
-
-    if len(bins) > max_bins:
-        range_val = max_val - min_val
-        bin_width = max(multiple, round((range_val / max_bins) / multiple) * multiple)
-        bins = list(range(int(min_val), int(max_val) + int(bin_width), int(bin_width)))
-
-    # Histogramme initial
-    counts, _ = np.histogram(df_cleaned[var], bins=bins)
-    seuil_bas = min_pct * n
-    seuil_haut = max_pct * n
-
-    new_bins = [bins[0]]
-    current_count = 0
-
-    # Étape 1 – Fusionner les trop petites tranches
-    for i in range(len(counts)):
-        current_count += counts[i]
-        if current_count >= seuil_bas:
-            new_bins.append(bins[i + 1])
-            current_count = 0
-    if new_bins[-1] != bins[-1]:
-        new_bins.append(bins[-1])
-
-    # Étape 2 – Recompter et exploser les tranches trop pleines
-    final_bins = [new_bins[0]]
-    for i in range(len(new_bins) - 1):
-        start = new_bins[i]
-        end = new_bins[i + 1]
-        mask = (df_cleaned[var] >= start) & (df_cleaned[var] < end)
-        count = mask.sum()
-
-        if count > seuil_haut:
-            # On découpe en sous-bins de taille fixe
-            n_sub = int(np.ceil(count / seuil_haut))
-            sub_bin_width = max(multiple, round((end - start) / n_sub / multiple) * multiple)
-            sub_bins = list(range(start, end, sub_bin_width))
-            if sub_bins[-1] < end:
-                sub_bins.append(end)
-            final_bins += sub_bins[1:]  # éviter doublon
-        else:
-            final_bins.append(end)
-
-    final_bins.append(np.inf)
-    labels = [f"[{final_bins[i]}-{final_bins[i+1]}[" if final_bins[i+1] != np.inf else f"+{final_bins[i]}" for i in range(len(final_bins) - 1)]
-
-    return final_bins, labels
-"""
 
 def calculer_bins_labels_equilibres(df, var, min_pct=0.05, max_pct=0.3, max_bins=20, multiple=5):
     q1, q3 = np.percentile(df[var], [15, 85])

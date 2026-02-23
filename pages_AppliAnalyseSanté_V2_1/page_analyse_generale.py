@@ -13,7 +13,7 @@ choix_annee=[2016,2017,2018,2019,2020,2021, 2022, 2023,2024,2025]
 def Analyse_generale():
     ID = st.sidebar.radio(
     "Sélectionnez l'identifiant à concidérer",
-    ('id_bénéf', 'id_assuré'))
+    ('id_beneficiaire', 'id_assuré'))
     # Créer des widgets pour permettre à l'utilisateur de choisir l'année et l'intervalle de mois
     annee = st.sidebar.selectbox("Année", choix_annee)
     mois_min, mois_max = st.sidebar.slider("Plage de mois", min_value=1, max_value=12, value=(1, 12))

@@ -14,7 +14,7 @@ choix_annee=[2016,2017,2018,2019,2020,2021, 2022, 2023,2024,2025]
 def _100p100Santé():
     ID = st.sidebar.radio(
     "Sélectionnez l'identifiant à concidérer",
-    ('id_bénéf', 'id_assuré'))
+    ('id_beneficiaire', 'id_assuré'))
     # Créer des widgets pour permettre à l'utilisateur de choisir l'année et l'intervalle de mois
     unique_annees = choix_annee
     all_annees_selected = st.sidebar.selectbox('Voulez-vous inclure uniquement des années spécifiques ? Si la réponse est oui, veuillez cocher la case ci-dessous, puis sélectionnez la ou les année(s) dans le nouveau champ.', ['Inclure toutes les années disponibles','Sélection manuelle'])
@@ -33,14 +33,14 @@ def _100p100Santé():
 
     columns = list(st.session_state["donnees"].columns)
     # Valeur par défaut souhaitée
-    default_value = "100% santé"
+    default_value = "sante_100"
 
     # Calcul de l'index correspondant
     default_index = columns.index(default_value) if default_value in columns else 0
 
-    if "Sous famille" in list(st.session_state["donnees"].columns):
+    if "sous_famille" in list(st.session_state["donnees"].columns):
         select_var = st.selectbox('Séléctionnez la variable du 100% santé', columns,default_index)
-        select_sf = st.multiselect('Séléctionnez la sous famille contenant du 100% santé', list(st.session_state["donnees"]['Sous famille'].unique()))
+        select_sf = st.multiselect('Séléctionnez la sous famille contenant du 100% santé', list(st.session_state["donnees"]['sous_famille'].unique()))
         # Afficher la variable sélectionnée sous forme de liste
         
         #sf = [select_sf]
@@ -71,7 +71,7 @@ def _100p100Santé():
         # Renommage des catégories
         data = workOnData.rename_cat(data, select_var)
         # Affichage du graphique mis à jour
-    sf=data['Famille acte'].unique()[0]
+    sf=data['famille_acte_aops'].unique()[0]
     charts.Panier_plot(data, ID, select_var, sf, 
                         st.session_state["Qualité images"], st.session_state["repertoire_images"])
     charts.Panier_plot_ventilation(data, ID, select_var, sf, 

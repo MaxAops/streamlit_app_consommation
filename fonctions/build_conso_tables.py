@@ -94,7 +94,7 @@ L_Dentaire=sorted(Dentaire, key=Dentaire.get)
 def Famille_acte_sorted(df):
     Famille_acte_sorted = []
     for i in list(sorted_Famille.keys()):
-        if i in df['Famille acte'].unique():
+        if i in df['famille_acte_aops'].unique():
             Famille_acte_sorted.append(i)
     return Famille_acte_sorted
 
@@ -108,33 +108,32 @@ def TableConso(df,Emplacement_stockage,ID,backend):
     
     annee=int(df['annee_soins'].unique())
     # Dernière modif pour gérer les làl avec une ligne base une ligne option (problème pour le RàC total)
-    dfassureur= pd.pivot_table(df,values=['FR','R_SS','RC'],index=[ID,'Famille acte'],aggfunc='sum').reset_index()
-    dfassureur['FR']=np.where(np.abs(dfassureur['FR'])<np.abs(dfassureur['R_SS']+dfassureur['RC']),(dfassureur['R_SS']+dfassureur['RC'])*np.sign(dfassureur['RC']),dfassureur['FR'])
-    dfassureur['RàC']=dfassureur['FR']-dfassureur['R_SS']-dfassureur['RC']
+    dfassureur= pd.pivot_table(df,values=['frais_reels','rbt_ss','RC'],index=[ID,'famille_acte_aops'],aggfunc='sum').reset_index()
+    dfassureur['frais_reels']=np.where(np.abs(dfassureur['frais_reels'])<np.abs(dfassureur['rbt_ss']+dfassureur['RC']),(dfassureur['rbt_ss']+dfassureur['RC'])*np.sign(dfassureur['RC']),dfassureur['frais_reels'])
+    dfassureur['RàC']=dfassureur['frais_reels']-dfassureur['rbt_ss']-dfassureur['RC']
     ##################################
 
 
-    table=pd.pivot_table(dfassureur, values=['FR','RàC','RC','R_SS'], index=['Famille acte'], aggfunc=np.sum).reset_index()
-    table=table[table['Famille acte']!='Divers']
-    table.index=table['Famille acte']
-    table = table.reindex(sort_by).drop(columns='Famille acte')
+    table=pd.pivot_table(dfassureur, values=['frais_reels','RàC','RC','rbt_ss'], index=['famille_acte_aops'], aggfunc=np.sum).reset_index()
+    table=table[table['famille_acte_aops']!='Divers']
+    table.index=table['famille_acte_aops']
+    table = table.reindex(sort_by).drop(columns='famille_acte_aops')
     table.reset_index()
 
+    table2=pd.pivot_table(dfassureur, values=[ID], index=['famille_acte_aops'], aggfunc='nunique').reset_index()
+    table=pd.merge(table,table2,on='famille_acte_aops')
 
-    table2=pd.pivot_table(dfassureur, values=[ID], index=['Famille acte'], aggfunc=pd.Series.nunique).reset_index()
-    table=pd.merge(table,table2,on='Famille acte')
-    table['FR']=np.where(table['RàC']<0,table['R_SS']+table['RC'],table['FR'])
-    table['RàC']=table['FR']-table['RC']-table['R_SS']
-    table.rename(columns={ID: "Nombre consommants",'FR':'Frais réels','RàC':'Reste à charge','R_SS':'Remboursement sécurité sociale','RC':'Remboursement complémentaire'},inplace=True)
-
-
-    TT = pd.DataFrame([[dfassureur[ID].nunique(),dfassureur['FR'].sum(),dfassureur['R_SS'].sum(),dfassureur['RC'].sum(),dfassureur['RàC'].sum()]], columns=['Nombre consommants','FR','Remboursement sécurité sociale','Remboursement complémentaire','RàC'], index=['Total']).reset_index().rename(columns={'index':'Famille acte','FR':'Frais réels','RàC':'Reste à charge'})
-
-    TT=TT[['Famille acte','Frais réels','Remboursement complémentaire','Remboursement sécurité sociale','Reste à charge','Nombre consommants']]
+    table['frais_reels']=np.where(table['RàC']<0,table['rbt_ss']+table['RC'],table['frais_reels'])
+    table['RàC']=table['frais_reels']-table['RC']-table['rbt_ss']
+    table.rename(columns={ID: "Nombre consommants",'frais_reels':'Frais réels','RàC':'Reste à charge','rbt_ss':'Remboursement sécurité sociale','RC':'Remboursement complémentaire'},inplace=True)
+    
+    TT = pd.DataFrame([[dfassureur[ID].nunique(),dfassureur['frais_reels'].sum(),dfassureur['rbt_ss'].sum(),dfassureur['RC'].sum(),dfassureur['RàC'].sum()]], columns=['Nombre consommants','frais_reels','Remboursement sécurité sociale','Remboursement complémentaire','RàC'], index=['Total']).reset_index().rename(columns={'index':'famille_acte_aops','frais_reels':'Frais réels','RàC':'Reste à charge'})
+    
+    TT=TT[['famille_acte_aops','Frais réels','Remboursement complémentaire','Remboursement sécurité sociale','Reste à charge','Nombre consommants']]
     table=pd.concat([table,TT],axis=0)
     table['Taux de couverture']=(table['Remboursement complémentaire']+table['Remboursement sécurité sociale'])/table['Frais réels']
-    table = table[['Famille acte','Nombre consommants','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge','Taux de couverture']].reset_index(drop=True)
-    tableAvantMiseEnforme=table.copy()
+    table = table[['famille_acte_aops','Nombre consommants','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge','Taux de couverture']].reset_index(drop=True).rename(columns={'famille_acte_aops':'Famille acte'})
+    tableAvantMiseEnforme=table.copy() 
 
     table[['Nombre consommants','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge']]=table[['Nombre consommants','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge']].applymap(formatM)
     table=table.rename(columns={'Famille acte':str(annee)})    
@@ -191,103 +190,6 @@ def table_N_vs_NMoins1(table1,table2,annee,Emplacement_stockage,backend):
         print("erreur de la librairie dfi")
     return tableAvantMiseEnforme
 
-""" # Ancienne version avec FR et R_SS
-def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouclée):
-
-    st.write(f"{Variable_bouclée} : {len(df[df[mesure].isna()])} lignes n'ont pas de sous famille renseignées. Soit {formatM(df[df[mesure].isna()]['RC'].sum())}€ de remboursement complémentaire")
-    
-    sort_by=['Dentaire','Optique','Hospitalisation','Consultations et visites',
-             'Soins courants','Pharmacie'] #,'Divers'
-
-    annee=int(df['annee_soins'].unique())
-    # Dernière modif pour gérer les làl avec une ligne base une ligne option (problème pour le RàC total)
-    dfassureur= pd.pivot_table(df,values=['FR','R_SS','RC','nombre_acte'],index=[ID,mesure],aggfunc='sum').reset_index()
-    dfassureur['FR']=np.where(np.abs(dfassureur['FR'])<np.abs(dfassureur['R_SS']+dfassureur['RC']),(dfassureur['R_SS']+dfassureur['RC'])*np.sign(dfassureur['RC']),dfassureur['FR'])
-    dfassureur['RàC']=dfassureur['FR']-dfassureur['R_SS']-dfassureur['RC']
-    ##################################
-
-
-    table=pd.pivot_table(dfassureur, values=['FR','RàC','RC','R_SS','nombre_acte'], index=[mesure], aggfunc=np.sum).reset_index()
-    table['Remboursement complémentaire moyen']=round(table['RC']/table['nombre_acte'],2)
-    table=table[table[mesure]!='Divers']
-    table.index=table[mesure]
-
-    if 'Dentaire' in df[mesure].unique():
-        table = table.reindex(sort_by).drop(columns=mesure)
-
-    elif Variable_bouclée=='Hospitalisation':
-        table = table.reindex(L_Hospitalisation).drop(columns=mesure)
-
-    elif Variable_bouclée=='Pharmacie':
-        table = table.reindex(L_Pharmacie).drop(columns=mesure)
-    
-    elif Variable_bouclée=='Optique':
-        table = table.reindex(L_Optique).drop(columns=mesure)
-    
-    elif Variable_bouclée=='Dentaire':
-        table = table.reindex(L_Dentaire).drop(columns=mesure)
-
-    elif Variable_bouclée=='Consultations et visites':
-        table = table.reindex(L_CS).drop(columns=mesure)
-
-    elif Variable_bouclée=='Soins courants':
-        table = table.reindex(L_SC).drop(columns=mesure)
-    
-    else:
-        table = table.sort_values(by='RC',ascending=False).drop(columns=mesure)
-
-
-    table2=pd.pivot_table(dfassureur, values=[ID], index=[mesure], aggfunc=lambda x: len(x.unique())).reset_index()
-    table=pd.merge(table,table2,on=mesure)
-    # Correction si RàC <0
-    table['FR']=np.where(table['RàC']<0,table['R_SS']+table['RC'],table['FR'])
-    table['RàC']=table['FR']-table['RC']-table['R_SS']
-    table.rename(columns={ID: "Nombre consommants",'FR':'Frais réels','RàC':'Reste à charge','R_SS':'Remboursement sécurité sociale','RC':'Remboursement complémentaire','nombre_acte':'Nombre actes'},inplace=True)
-
-    TT = pd.DataFrame([[dfassureur[ID].nunique(),dfassureur['FR'].sum(),dfassureur['R_SS'].sum(),dfassureur['RC'].sum(),dfassureur['RàC'].sum(),dfassureur['nombre_acte'].sum(),(dfassureur['RC'].sum()/dfassureur['nombre_acte'].sum())]], columns=['Nombre consommants','FR','Remboursement sécurité sociale','Remboursement complémentaire','RàC','Nombre actes','Remboursement complémentaire moyen'], index=['Total']).reset_index().rename(columns={'index':mesure,'FR':'Frais réels','RàC':'Reste à charge'})
-
-    TT=TT[[mesure,'Nombre actes','Frais réels','Remboursement complémentaire','Remboursement sécurité sociale','Reste à charge','Nombre consommants','Remboursement complémentaire moyen']]
-    table=pd.concat([table,TT],axis=0)
-    table['Taux de couverture']=(table['Remboursement complémentaire']+table['Remboursement sécurité sociale'])/table['Frais réels']
-    table = table[[mesure,'Nombre consommants','Nombre actes','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge','Taux de couverture','Remboursement complémentaire moyen']].reset_index(drop=True).fillna(0)
-    tableAvantMiseEnforme=table.copy()
-
-    table[['Nombre consommants','Nombre actes','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge']]=table[['Nombre consommants','Nombre actes','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge']].applymap(formatM)
-    table=table.rename(columns={mesure:str(annee)})   
-    table['Remboursement complémentaire moyen']=table['Remboursement complémentaire moyen'].apply(lambda x: '{:.2f} €'.format(x))
-
-    table=table.style.format({'Taux de couverture': "{:.1%}"})
-
-# Mise en forme
-    #Couleur une ligne sur 2
-    table=table.set_table_styles([
-        {'selector': 'tr:nth-child(even)','props': [('background-color', '#ffffff'),('color', 'black')]},
-        {'selector': 'tr:nth-child(odd)','props': [('background-color', '#cccccc'),('color', 'black')]}], overwrite=False)
-
-    # 3 colonnes : index, RC, T%
-    table=table.set_table_styles({str(annee): [{'selector': '','props': [('background-color', '#2C67AF'),('text-align', 'left'),('color', 'white'),('font-size', '14px')]}]}, overwrite=False).hide(axis='index')
-    table=table.set_table_styles({'Remboursement complémentaire': [{'selector': '','props': [('background-color', '#2B3885'),('text-align', 'center'),('color', 'white'),('font-size', '14px')]}]}, overwrite=False)
-    table=table.set_table_styles({'Taux de couverture': [{'selector': '','props': [('background-color', '#662064'),('text-align', 'center'),('color', 'white'),('font-size', '14px')]}]}, overwrite=False)
-
-    # Dernière ligne
-    table=table.set_table_styles({max(table.index): [{'selector': '','props': [('background-color', '#173A64'),('color', 'white'),('font-weight', 'bold'),('font-size', '14px')]}]}, axis=1, overwrite=False)  
-    table=table.set_table_styles({max(table.index): [{'selector': '','props': [('border', '1px solid #FFFFFF'),('font-size', '14px')]}]}, axis=1, overwrite=False) 
-
-    # Première ligne
-    table=table.set_table_styles([{'selector': 'th:not(.index_name)','props': [('background-color', '#173A64'),('color', 'white'),('text-align', 'center'),('font-size', '14px')]}], overwrite=False) 
-    table=table.set_table_styles([{'selector': 'td','props': [('color', 'black'),('border-left', '1px solid #FFFFFF'),('border-right', '1px solid #FFFFFF'),('text-align', 'center'),('font-size', '14px')]}], overwrite=False)  
-    table=table.set_table_styles([{'selector': 'th','props': [('color', 'black'),('border', '1px solid #FFFFFF'),('font-size', '14px')]}], overwrite=False) 
-
-    # largeur colonne
-    table=table.set_properties(**{'text-align': 'right','width':'100px'})
-
-    st.dataframe(table)
-    try:
-        dfi.export(table, Emplacement_stockage+'table_détails'+str(mesure)+'_'+str(Variable_bouclée)+'_'+str(annee)+'.jpg',dpi=100,table_conversion='chrome')
-    except:
-        print("erreur de la librairie dfi")
-    return tableAvantMiseEnforme
-"""
 
 def format_table_Sousfamille(table,annee):
     table=table.set_table_styles([
@@ -320,16 +222,19 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
     sort_by=['Dentaire','Optique','Hospitalisation','Consultations et visites',
              'Soins courants','Pharmacie'] #,'Divers'
 
-    annee=int(df['annee_soins'].unique())
+    if df['annee_soins'].nunique()==1:
+        annee=int(df['annee_soins'].unique()[0])
+    else:
+        print("Annees de survenance multiple dans l'extraction")
     # Dernière modif pour gérer les làl avec une ligne base une ligne option (problème pour le RàC total)
-    dfassureur= pd.pivot_table(df,values=['FR','R_SS','RC','nombre_acte'],index=[ID,mesure],aggfunc='sum').reset_index()
-    dfassureur['FR']=np.where(np.abs(dfassureur['FR'])<np.abs(dfassureur['R_SS']+dfassureur['RC']),(dfassureur['R_SS']+dfassureur['RC'])*np.sign(dfassureur['RC']),dfassureur['FR'])
-    dfassureur['RàC']=dfassureur['FR']-dfassureur['R_SS']-dfassureur['RC']
+    dfassureur= pd.pivot_table(df,values=['frais_reels','rbt_ss','RC','nb_acte'],index=[ID,mesure],aggfunc='sum').reset_index()
+    dfassureur['frais_reels']=np.where(np.abs(dfassureur['frais_reels'])<np.abs(dfassureur['rbt_ss']+dfassureur['RC']),(dfassureur['rbt_ss']+dfassureur['RC'])*np.sign(dfassureur['RC']),dfassureur['frais_reels'])
+    dfassureur['RàC']=dfassureur['frais_reels']-dfassureur['RC']-dfassureur['rbt_ss']
     ##################################
 
 
-    table=pd.pivot_table(dfassureur, values=['FR','RàC','RC','R_SS','nombre_acte'], index=[mesure], aggfunc=np.sum).reset_index()
-    table['Remboursement complémentaire moyen']=round(table['RC']/table['nombre_acte'],2)
+    table=pd.pivot_table(dfassureur, values=['frais_reels','RàC','RC','rbt_ss','nb_acte'], index=[mesure], aggfunc='sum').reset_index()
+    table['Remboursement complémentaire moyen']=round(table['RC']/table['nb_acte'],2)
     table=table[table[mesure]!='Divers']
     table.index=table[mesure]
 
@@ -358,14 +263,14 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
         table = table.sort_values(by='RC',ascending=False).drop(columns=mesure)
 
 
-    table2=pd.pivot_table(dfassureur, values=[ID], index=[mesure], aggfunc=lambda x: len(x.unique())).reset_index()
+    table2=pd.pivot_table(dfassureur, values=[ID], index=[mesure], aggfunc='nunique').reset_index()
     table=pd.merge(table,table2,on=mesure)
     # Correction si RàC <0
-    table['FR']=np.where(table['RàC']<0,table['R_SS']+table['RC'],table['FR'])
-    table['RàC']=table['FR']-table['RC']-table['R_SS']
-    table.rename(columns={ID: "Nombre consommants",'FR':'Frais réels','RàC':'Reste à charge','R_SS':'Remboursement sécurité sociale','RC':'Remboursement complémentaire','nombre_acte':'Nombre actes'},inplace=True)
+    table['frais_reels']=np.where(table['RàC']<0,table['rbt_ss']+table['RC'],table['frais_reels'])
+    table['RàC']=table['frais_reels']-table['RC']-table['rbt_ss']
+    table.rename(columns={ID: "Nombre consommants",'frais_reels':'Frais réels','RàC':'Reste à charge','rbt_ss':'Remboursement sécurité sociale','RC':'Remboursement complémentaire','nb_acte':'Nombre actes'},inplace=True)
 
-    TT = pd.DataFrame([[dfassureur[ID].nunique(),dfassureur['FR'].sum(),dfassureur['R_SS'].sum(),dfassureur['RC'].sum(),dfassureur['RàC'].sum(),dfassureur['nombre_acte'].sum(),(dfassureur['RC'].sum()/dfassureur['nombre_acte'].sum())]], columns=['Nombre consommants','FR','Remboursement sécurité sociale','Remboursement complémentaire','RàC','Nombre actes','Remboursement complémentaire moyen'], index=['Total']).reset_index().rename(columns={'index':mesure,'FR':'Frais réels','RàC':'Reste à charge'})
+    TT = pd.DataFrame([[dfassureur[ID].nunique(),dfassureur['frais_reels'].sum(),dfassureur['rbt_ss'].sum(),dfassureur['RC'].sum(),dfassureur['RàC'].sum(),dfassureur['nb_acte'].sum(),(dfassureur['RC'].sum()/dfassureur['nb_acte'].sum())]], columns=['Nombre consommants','frais_reels','Remboursement sécurité sociale','Remboursement complémentaire','RàC','Nombre actes','Remboursement complémentaire moyen'], index=['Total']).reset_index().rename(columns={'index':mesure,'frais_reels':'Frais réels','RàC':'Reste à charge'})
 
     TT=TT[[mesure,'Nombre actes','Frais réels','Remboursement complémentaire','Remboursement sécurité sociale','Reste à charge','Nombre consommants','Remboursement complémentaire moyen']]
     table=pd.concat([table,TT],axis=0)
@@ -373,10 +278,9 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
     table = table[[mesure,'Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge','Taux de couverture','Remboursement complémentaire moyen']].reset_index(drop=True).fillna(0) # 'Frais réels','Remboursement sécurité sociale'
     tableAvantMiseEnforme=table.copy()
 
-    table[['Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge']]=table[['Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge']].applymap(formatM) # 'Frais réels','Remboursement sécurité sociale'
+    table[['Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge']]=table[['Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge']].map(formatM) # 'Frais réels','Remboursement sécurité sociale'
     table=table.rename(columns={mesure:str(annee)})   
     table['Remboursement complémentaire moyen']=table['Remboursement complémentaire moyen'].apply(lambda x: '{:.2f} €'.format(x))
-
     table=table.style.format({'Taux de couverture': "{:.1%}"})
 
     table=format_table_Sousfamille(table,annee)
@@ -390,8 +294,8 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
 
 def comparaison_sf_n_n_1(tn,tn_1,Emplacement_stockage,annee,mesure,Variable_bouclée,backend):
     # Définir les index
-    tn_idx = tn.set_index('Sous famille')
-    tn_1_idx = tn_1.set_index('Sous famille')
+    tn_idx = tn.set_index('sous_famille')
+    tn_1_idx = tn_1.set_index('sous_famille')
 
     # Garder seulement les index en commun
     common_idx = tn_idx.index.intersection(tn_1_idx.index)
@@ -448,22 +352,22 @@ def table_dentaire(df):
 
     pt = pd.pivot_table(
     df,
-    values=['id_bénéf', 'nombre_acte', 'FR', 'R_SS', 'RC'],
-    index=['100% santé'],
+    values=['id_beneficiaire', 'nb_acte', 'frais_reels', 'rbt_ss', 'RC'],
+    index=['sante_100'],
     columns='annee_soins',
     aggfunc={
-        'id_bénéf': 'nunique',
-        'nombre_acte': 'sum',
-        'FR': 'sum',
-        'R_SS': 'sum',
+        'id_beneficiaire': 'nunique',
+        'nb_acte': 'sum',
+        'frais_reels': 'sum',
+        'rbt_ss': 'sum',
         'RC': 'sum'
     },
     margins=True,margins_name='Total'
     )
         # 1️⃣ Calcul du RAC
     rac = (
-        pt.xs('FR', axis=1, level=0)
-        - pt.xs('R_SS', axis=1, level=0)
+        pt.xs('frais_reels', axis=1, level=0)
+        - pt.xs('rbt_ss', axis=1, level=0)
         - pt.xs('RC', axis=1, level=0)
     )
     # 2️⃣ Recréer un MultiIndex de colonnes
@@ -477,7 +381,7 @@ def table_dentaire(df):
 
     # 1️⃣ Calcul RC moyen acte
     rc_moyen_acte = (
-    pt.xs('RC', axis=1, level=0)/pt.xs('nombre_acte', axis=1, level=0)
+    pt.xs('RC', axis=1, level=0)/pt.xs('nb_acte', axis=1, level=0)
     )
     # 2️⃣ Recréer un MultiIndex de colonnes
     rc_moyen_acte.columns = pd.MultiIndex.from_product(
@@ -490,7 +394,7 @@ def table_dentaire(df):
 
     # 1️⃣ Calcul RAC moyen acte
     rac_moyen_acte = (
-    pt.xs('RAC', axis=1, level=0)/pt.xs('nombre_acte', axis=1, level=0)
+    pt.xs('RAC', axis=1, level=0)/pt.xs('nb_acte', axis=1, level=0)
     )
     # 2️⃣ Recréer un MultiIndex de colonnes
     rac_moyen_acte.columns = pd.MultiIndex.from_product(
@@ -512,16 +416,16 @@ def table_dentaire(df):
 
     pt = pt.reindex(
         columns=[
-            'id_bénéf',
-            'nombre_acte',
+            'id_beneficiaire',
+            'nb_acte',
             'RC',
             'rc_moyen_acte',
             'rac_moyen_acte'
         ],
         level=0
     )
-    pt=pt.rename(columns={'id_bénéf':'Consommants',
-            'nombre_acte':'Nombre actes',
+    pt=pt.rename(columns={'id_beneficiaire':'Consommants',
+            'nb_acte':'Nombre actes',
             'RC':'Remboursement complémentaire',
             'rc_moyen_acte':'Remboursement complémentaire par acte',
             'rac_moyen_acte':'Reste à charge par acte'})
@@ -648,14 +552,14 @@ def formatM_with_zero(x):
 
 
 def table_optique(df):
-    pt=pd.pivot_table(df[(df['annee_soins']>=2024) & (df['annee_soins']==df['annee_paiement']) & (df['mois_paiement']<=9) & (df['mois_soins']<=9) & (df['Sous famille'].isin(['Verres', 'Monture']))], 
-               values=['id_bénéf','nombre_acte','FR','R_SS','RC'],index=['Sous famille','100% santé'],columns='annee_soins',aggfunc={'id_bénéf':'nunique','nombre_acte':'sum',
-                                                                                                                                     'FR':'sum','R_SS':'sum','RC':'sum'},margins=True,margins_name='Total')
+    pt=pd.pivot_table(df[(df['annee_soins']>=2024) & (df['annee_soins']==df['annee_paiement']) & (df['mois_paiement']<=9) & (df['mois_soins']<=9) & (df['sous_famille'].isin(['Verres', 'Monture']))], 
+               values=['id_beneficiaire','nb_acte','frais_reels','rbt_ss','RC'],index=['sous_famille','sante_100'],columns='annee_soins',aggfunc={'id_beneficiaire':'nunique','nb_acte':'sum',
+                                                                                                                                     'frais_reels':'sum','rbt_ss':'sum','RC':'sum'},margins=True,margins_name='Total')
 
     # 1️⃣ Calcul du RAC
     rac = (
-        pt.xs('FR', axis=1, level=0)
-        - pt.xs('R_SS', axis=1, level=0)
+        pt.xs('frais_reels', axis=1, level=0)
+        - pt.xs('rbt_ss', axis=1, level=0)
         - pt.xs('RC', axis=1, level=0)
     )
     # 2️⃣ Recréer un MultiIndex de colonnes
@@ -668,7 +572,7 @@ def table_optique(df):
 
     # 1️⃣ Calcul RC moyen acte
     rc_moyen_acte = (
-    pt.xs('RC', axis=1, level=0)/pt.xs('nombre_acte', axis=1, level=0)
+    pt.xs('RC', axis=1, level=0)/pt.xs('nb_acte', axis=1, level=0)
     )
     # 2️⃣ Recréer un MultiIndex de colonnes
     rc_moyen_acte.columns = pd.MultiIndex.from_product(
@@ -681,7 +585,7 @@ def table_optique(df):
 
     # 1️⃣ Calcul RAC moyen acte
     rac_moyen_acte = (
-    pt.xs('RAC', axis=1, level=0)/pt.xs('nombre_acte', axis=1, level=0)
+    pt.xs('RAC', axis=1, level=0)/pt.xs('nb_acte', axis=1, level=0)
     )
     # 2️⃣ Recréer un MultiIndex de colonnes
     rac_moyen_acte.columns = pd.MultiIndex.from_product(
@@ -698,16 +602,16 @@ def table_optique(df):
 
     pt = pt.reindex(
         columns=[
-            'id_bénéf',
-            'nombre_acte',
+            'id_beneficiaire',
+            'nb_acte',
             'RC',
             'rc_moyen_acte',
             'rac_moyen_acte'
         ],
         level=0
     )
-    pt=pt.rename(columns={'id_bénéf':'Consommants',
-            'nombre_acte':'Nombre actes',
+    pt=pt.rename(columns={'id_beneficiaire':'Consommants',
+            'nb_acte':'Nombre actes',
             'RC':'Remboursement complémentaire',
             'rc_moyen_acte':'Remboursement complémentaire par acte',
             'rac_moyen_acte':'Reste à charge par acte'})
@@ -733,7 +637,7 @@ def style_rows(row):
     elif sous_famille == "Verres":
         return ["background-color: #EAD1DC;color:#173A64; font-weight: bold"] * len(row)
     elif sous_famille == "Total":
-        return ["background-color: #C27BA0; font-weight: bold;color:#FFFFFF"] * len(row)
+        return ["background-color: #C27BA0; font-weight: bold;color:#FFFFFF; border-top:2px solid white"] * len(row)
     return [""] * len(row)
 
 def style_index_css(pt):
@@ -753,7 +657,7 @@ def style_index_css(pt):
         elif idx[0] == "Total":
             styles.append({
                 "selector": f"tbody tr:nth-child({i+1}) th.row_heading",
-                "props": "background-color: #662064; font-weight: bold;color:#FFFFFF"
+                "props": "background-color: #662064; font-weight: bold;color:#FFFFFF; border-top:2px solid white"
             })
     return styles
 
@@ -798,9 +702,21 @@ def apply_pivot_style_optique(pt):
                     ],
                 },
                 {
-                    "selector": "tbody tr:last-child th.row_heading",
+                    "selector": "tbody tr:last-child th.row_heading.level0",
                     "props": [
                         ("border-right", "none")
+                    ],
+                },
+                {
+                    "selector": "tbody tr:last-child th.row_heading.level1",
+                    "props": [
+                        ("border-right", "2px solid white")
+                    ],
+                },
+                {
+                    "selector": "tbody tr:first-child th.row_heading",  # ✅ Première case de l'index
+                    "props": [
+                        ("border-top", "2px solid white")
                     ],
                 }
             ],
@@ -816,19 +732,19 @@ def table_100_sante(df,Emplacement_stockage,backend):
     if df.empty:
         st.write("Aucune donnée disponible pour le tableau 100% santé.")
         return None
-    elif '100% santé' not in df.columns:
+    elif 'sante_100' not in df.columns:
         st.write("Aucune donnée 100% santé disponible pour le tableau.")
         return None 
-    elif df['100% santé'].isna().all():
+    elif df['sante_100'].isna().all():
         st.write("Aucune donnée 100% santé disponible pour le tableau.")
         return None
-    elif df['Famille acte'].nunique() > 1:
+    elif df['famille_acte_aops'].nunique() > 1:
         st.write("Le tableau 100% santé ne peut être généré que pour une seule famille d'actes à la fois.")
         return None
-    elif df['Famille acte'].iloc[0] not in ['Optique', 'Dentaire']:
+    elif df['famille_acte_aops'].iloc[0] not in ['Optique', 'Dentaire']:
         st.write("Le tableau 100% santé n'est disponible que pour les familles d'actes Optique et Dentaire.")
         return None
-    elif df['Famille acte'].iloc[0]=='Dentaire':
+    elif df['famille_acte_aops'].iloc[0]=='Dentaire':
         pt = table_dentaire(df)
         table=style_pivot_dentaire(pt)
         st.dataframe(table)
@@ -836,7 +752,7 @@ def table_100_sante(df,Emplacement_stockage,backend):
             dfi.export(table, Emplacement_stockage+"/"+'table_100_sante_dentaire.jpg',dpi=100,table_conversion=backend)
         except:
             print("erreur de la librairie dfi")
-    elif df['Famille acte'].iloc[0]=='Optique':
+    elif df['famille_acte_aops'].iloc[0]=='Optique':
         pt = table_optique(df)
         table = apply_pivot_style_optique(pt)
         st.dataframe(table)

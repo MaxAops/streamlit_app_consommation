@@ -12,7 +12,7 @@ choix_annee=[2016,2017,2018,2019,2020,2021, 2022, 2023,2024,2025]
 def comparaison_survenances():
     ID = st.sidebar.radio(
     "Sélectionnez l'identifiant à concidérer",
-    ('id_bénéf', 'id_assuré'))
+    ('id_beneficiaire', 'id_assuré'))
     # Créer des widgets pour permettre à l'utilisateur de choisir l'année et l'intervalle de mois
     unique_annees = choix_annee
     all_annees_selected = st.sidebar.selectbox('Voulez-vous inclure uniquement des années spécifiques ? Si la réponse est oui, veuillez cocher la case ci-dessous, puis sélectionnez la ou les année(s) dans le nouveau champ.', ['Inclure toutes les années disponibles','Sélection manuelle'])
