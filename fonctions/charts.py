@@ -590,10 +590,13 @@ def EVO_Montant(df,var,qualitéGraphique,Emplacement_stockage):
 
 def Panier_plot(d, ID, PanierVar, titre, qualitéGraphique, Emplacement_stockage):
 
+    
     # =========================
     # Préparation des données
     # =========================
-    d[PanierVar] = d[PanierVar].replace({'maîtrisés':'Maîtrisés','libre':'Libre'})
+    d[PanierVar] = d[PanierVar].str.title()
+    #d[PanierVar] = d[PanierVar].replace({'maîtrisés':'Maîtrisés','libre':'Libre'})
+    
     sns.set(style="whitegrid")
 
     fig, ax = plt.subplots(figsize=(8, 4))
@@ -752,8 +755,7 @@ def Panier_plot(d, ID, PanierVar, titre, qualitéGraphique, Emplacement_stockage
 
 def Panier_plot_ventilation(d, ID, PanierVar, titre, qualitéGraphique, Emplacement_stockage):
     
-    d[PanierVar]=d[PanierVar].replace('maîtrisés','Maîtrisés')
-    d[PanierVar]=d[PanierVar].replace('libre','Libre')
+    d[PanierVar] = d[PanierVar].str.title()
     # Table initiale
     table1 = pd.pivot_table(
         d, values=[ID, 'nb_acte', 'RC'], 
@@ -768,7 +770,8 @@ def Panier_plot_ventilation(d, ID, PanierVar, titre, qualitéGraphique, Emplacem
         ).reset_index()
     
     res=pd.merge(table1[['annee_soins',PanierVar,'RC','sous_famille']],table[['annee_soins',PanierVar,'RC']],on=['annee_soins',PanierVar],how='left')
-    res['taux']=round(res['RC_x']/res['RC_y']*100,2)
+    res['taux'] = (res['RC_x'] / res['RC_y'].replace(0, np.nan) * 100).round(2)
+    res['taux'] = res['taux'].fillna(0)
     res[["annee_soins", PanierVar,"sous_famille","taux"]]
 
     ### Table des contenant les montants d'utilisation de sf par panier
@@ -782,14 +785,28 @@ def Panier_plot_ventilation(d, ID, PanierVar, titre, qualitéGraphique, Emplacem
     pivot_df = df.pivot(index=[PanierVar,'annee_soins'], columns=['sous_famille'], values='taux').fillna(0)
 
     if (PanierVar=='sante_100') and ('Dentaire' in d['famille_acte_aops'].unique()):
-        ordre_categorie = ['100% santé', 'Maîtrisés', 'Libre']
+        ordre_categorie = ['100% Santé', 'Maîtrisés', 'Libre']
         # Convertir le niveau 'categorie' en catégorie ordonnée
+        # ----- pivot_df (taux)
         pivot_df.index = pd.MultiIndex.from_arrays([
             pd.Categorical(pivot_df.index.get_level_values('sante_100'), categories=ordre_categorie, ordered=True),
             pivot_df.index.get_level_values('annee_soins')
         ], names=pivot_df.index.names)
         
         pivot_df = pivot_df.sort_index()
+
+
+        # ----- pivot_df_m (montants)
+        pivot_df_m.index = pd.MultiIndex.from_arrays([
+            pd.Categorical(
+                pivot_df_m.index.get_level_values(PanierVar),
+                categories=ordre_categorie,
+                ordered=True
+            ),
+            pivot_df_m.index.get_level_values('annee_soins')
+        ], names=pivot_df_m.index.names)
+    
+        pivot_df_m = pivot_df_m.sort_index()
 
     # Tracer un graphique à barres empilées
     sns.set_style("whitegrid")
@@ -809,21 +826,25 @@ def Panier_plot_ventilation(d, ID, PanierVar, titre, qualitéGraphique, Emplacem
     # Extraire les sous-familles de l'index pour les annotations
     sous_familles  = list(pd.unique(pivot_df.index.get_level_values(PanierVar)))
 
-    # Définir les positions où vous souhaitez ajouter les annotations
-    if len(pd.unique(pivot_df.index.get_level_values(PanierVar))) ==2:
-        positions = [0.30,0.75]
-    elif len(pd.unique(pivot_df.index.get_level_values(PanierVar))) ==3:
-        positions = [0.21,0.52,0.83]
-    else:
-        return
+    paniers = pivot_df.index.get_level_values(PanierVar).unique()
 
-
-    # Ajouter les annotations dynamiquement
-    for i, sf in enumerate(sous_familles):
-        ax.annotate(sf, 
-                    xy=(positions[i], 0.15), 
-                    xycoords='figure fraction', 
-                    ha='center')
+    for panier in paniers:
+        
+        # positions des barres correspondant à ce panier
+        pos = [i for i, x in enumerate(pivot_df.index.get_level_values(PanierVar)) if x == panier]
+        
+        # centre du groupe
+        center = sum(pos) / len(pos)
+        
+        ax.text(
+            center,
+            -20,              # position verticale sous l'axe
+            panier,
+            ha='center',
+            va='top',
+            fontsize=10,
+            fontweight='normal'
+        )
 
     col=0
     line=0

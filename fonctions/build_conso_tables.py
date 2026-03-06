@@ -349,6 +349,8 @@ def ajouter_tableau_excel(file_path, df, sheet_name, startrow, startcol):
 
 
 def table_dentaire(df):
+    
+    df['sante_100'] = df['sante_100'].str.title()
 
     pt = pd.pivot_table(
     df,
@@ -377,7 +379,7 @@ def table_dentaire(df):
     )
     # 3️⃣ Concaténation au pivot
     pt = pd.concat([pt, rac], axis=1)
-    pt.loc['100% santé', ('RAC', slice(None))] = 0
+    pt.loc['100% Santé', ('RAC', slice(None))] = 0
 
     # 1️⃣ Calcul RC moyen acte
     rc_moyen_acte = (
@@ -407,7 +409,7 @@ def table_dentaire(df):
 
     # Suppression du total en colonne uniquement
     pt = pt.drop(columns='Total', level=1)
-    ordre=['100% santé','Maîtrisés','Libre','Total']
+    ordre=['100% Santé','Maîtrisés','Libre','Total']
     ordre_table=[]
     for o in ordre:
         if o in pt.index:
@@ -552,7 +554,10 @@ def formatM_with_zero(x):
 
 
 def table_optique(df):
-    pt=pd.pivot_table(df[(df['annee_soins']>=2024) & (df['annee_soins']==df['annee_paiement']) & (df['mois_paiement']<=9) & (df['mois_soins']<=9) & (df['sous_famille'].isin(['Verres', 'Monture']))], 
+
+    df['sante_100'] = df['sante_100'].str.title()
+
+    pt=pd.pivot_table(df, 
                values=['id_beneficiaire','nb_acte','frais_reels','rbt_ss','RC'],index=['sous_famille','sante_100'],columns='annee_soins',aggfunc={'id_beneficiaire':'nunique','nb_acte':'sum',
                                                                                                                                      'frais_reels':'sum','rbt_ss':'sum','RC':'sum'},margins=True,margins_name='Total')
 
