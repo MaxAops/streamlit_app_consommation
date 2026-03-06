@@ -17,64 +17,9 @@ sorted_Famille={'Hospitalisation':1,
 
 
 # Fonction pour charger les données
-#@st.cache_data
-#def load_csv(file):
-#    return pd.read_csv(file,sep=';')
-
-
-def detect_encoding(file_path):
-    with open(file_path, "rb") as f:
-        result = chardet.detect(f.read(100_000))
-    return result["encoding"]
-
-def detect_delimiter(file_path, encoding):
-    delimiters = [',', ';', '\t', '|']
-
-    try:
-        # Lecture d'un échantillon
-        with open(file_path, "r", encoding=encoding, newline="") as f:
-            sample = f.read(100_000)
-            # Tentative avec csv.Sniffer
-            dialect = csv.Sniffer().sniff(sample)
-            return dialect.delimiter
-    except:
-        pass  # Sniffer a échoué, on teste les séparateurs connus
-
-    # Fallback : choisir le séparateur qui donne le plus de colonnes
-    best_sep = ','
-    max_cols = 0
-
-    for sep in delimiters:
-        try:
-            df = pd.read_csv(file_path, encoding=encoding, sep=sep, nrows=5)
-            if df.shape[1] > max_cols:
-                max_cols = df.shape[1]
-                best_sep = sep
-        except:
-            continue
-
-    return best_sep
-
 @st.cache_data
-def load_csv(file_path):
-    detected = detect_encoding(file_path)
-    encodings = [e for e in [detected, "utf-8", "cp1252", "latin-1"] if e]
-
-    for enc in encodings:
-        try:
-            delimiter = detect_delimiter(file_path, enc)
-
-            print(f"\nLecture : {file_path}")
-            print(f"  → encoding : {enc}")
-            print(f"  → séparateur : '{delimiter}'")
-
-            return pd.read_csv(file_path, encoding=enc, sep=delimiter)
-
-        except Exception as e:
-            print(f"  ⚠️ échec avec {enc} : {e}")
-
-    print(f"❌ Impossible de lire {file_path}")
-    return None
+def load_csv(file):
+    return pd.read_csv(file,sep=';')
 
 
 
