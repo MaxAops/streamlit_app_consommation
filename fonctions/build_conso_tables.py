@@ -746,8 +746,8 @@ def table_100_sante(df,Emplacement_stockage,backend):
     elif df['famille_acte_aops'].nunique() > 1:
         st.write("Le tableau 100% santé ne peut être généré que pour une seule famille d'actes à la fois.")
         return None
-    elif df['famille_acte_aops'].iloc[0] not in ['Optique', 'Dentaire']:
-        st.write("Le tableau 100% santé n'est disponible que pour les familles d'actes Optique et Dentaire.")
+    elif (df['famille_acte_aops'].iloc[0] not in ['Optique', 'Dentaire','Soins courants']):
+        st.write("Le tableau 100% santé n'est disponible que pour les familles d'actes Optique et Dentaire ainsi que pour la sous-famille Audioprothèses.")
         return None
     elif df['famille_acte_aops'].iloc[0]=='Dentaire':
         pt = table_dentaire(df)
@@ -763,6 +763,14 @@ def table_100_sante(df,Emplacement_stockage,backend):
         st.dataframe(table)
         try:
             dfi.export(table, Emplacement_stockage+"/"+'table_100_sante_optique.jpg',dpi=100,table_conversion=backend)
+        except:
+            print("erreur de la librairie dfi")
+    elif df['sous_famille'].iloc[0]=='Audioprothèses':
+        pt = table_optique(df)
+        table = apply_pivot_style_optique(pt)
+        st.dataframe(table)
+        try:
+            dfi.export(table, Emplacement_stockage+"/"+'table_100_sante_audioprothèses.jpg',dpi=100,table_conversion=backend)
         except:
             print("erreur de la librairie dfi")
 
