@@ -34,6 +34,7 @@ page = st.sidebar.selectbox("Navigation", ["Charger les données", "Tables conso
                                            "Comparaison entre survenances","Etude sous famille","Etude prix","100% santé",'Cadencements & PSAP'])
 
 if page == "Charger les données":
+    st.title("ELIOT APPPPPPPPPLICATIOOOOOOOOOOIOIOOOOON")
     st.title("Chargement des données")
     charger_donnees()  # Charge uniquement sur cette page
     if st.session_state["donnees"] is not None:

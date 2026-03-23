@@ -3,9 +3,6 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 
-import chardet
-import csv
-
 sorted_Famille={'Hospitalisation':1,
 'Consultations et visites':2,
 'Soins courants':3,
