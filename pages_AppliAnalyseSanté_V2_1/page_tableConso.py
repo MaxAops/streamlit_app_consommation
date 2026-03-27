@@ -16,7 +16,7 @@ def tableConso():
     "Sélectionnez l'identifiant à concidérer",
     ('id_beneficiaire', 'id_assuré'))
     # Créer des widgets pour permettre à l'utilisateur de choisir l'année et l'intervalle de mois
-    annee = st.sidebar.selectbox("Année", choix_annee)
+    annee = st.sidebar.selectbox("Année", choix_annee, index=choix_annee.index(max(choix_annee)))
     mois_min, mois_max = st.sidebar.slider("Plage de mois", min_value=1, max_value=12, value=(1, 12))
     
     # Détecter si on est sur Streamlit Cloud

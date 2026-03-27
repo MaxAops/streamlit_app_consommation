@@ -91,6 +91,119 @@ Dentaire={'Soins dentaires':1,
 
 L_Dentaire=sorted(Dentaire, key=Dentaire.get)
 
+
+# ── Design system (cohérent avec charts.py) ───────────────────────────────
+_T_HEADER_BG    = "#1A2440"   # bande titre sombre
+_T_SUBHD_BG     = "#2C67AF"   # sous-en-têtes colonnes
+_T_SUBHD2_BG    = "#2B3885"   # variante sous-en-tête
+_T_COL1_BG      = "#EEF1F9"   # fond colonne libellé (très clair)
+_T_ROW_ODD      = "#FFFFFF"   # ligne impaire
+_T_ROW_EVEN     = "#F4F6FB"   # ligne paire (bleu très très doux)
+_T_TOTAL_BG     = "#1A2440"   # ligne Total (identique header)
+_T_TOTAL_FG     = "#1A2440"
+_T_TEXT         = "#1A2440"   # texte cellules
+_T_TEXT_MUTED   = "#4A5568"
+_T_POS          = "#1A6B3C"   # évolution positive (vert foncé)
+_T_NEG          = "#B91C1C"   # évolution négative (rouge foncé)
+_T_POS_BG       = "#D1FAE5"   # fond positif
+_T_NEG_BG       = "#FEE2E2"   # fond négatif
+_T_BORDER       = "#E2E8F0"   # séparateur très discret
+_T_FONT         = 13          # taille de base
+
+def _base_table_styles():
+    """Styles CSS communs à toutes les tables."""
+    return [
+        # En-têtes colonnes
+        {"selector": "th",
+         "props": [("background-color", _T_HEADER_BG),
+                   ("color", "#FFFFFF"),
+                   ("font-size", f"{_T_FONT}px"),
+                   ("font-weight", "600"),
+                   ("text-align", "center"),
+                   ("padding", "8px 10px"),
+                   ("border-bottom", f"2px solid {_T_SUBHD_BG}"),
+                   ("border-right", f"1px solid {_T_BORDER}"),
+]},
+        # Cellules
+        {"selector": "td",
+         "props": [("font-size", f"{_T_FONT}px"),
+                   ("color", _T_TEXT),
+                   ("padding", "6px 10px"),
+                   ("text-align", "right"),
+                   ("border-bottom", f"1px solid {_T_BORDER}"),
+                   ("border-right", f"1px solid {_T_BORDER}")]},
+        # Lignes paires
+        {"selector": "tr:nth-child(even) td",
+         "props": [("background-color", _T_ROW_EVEN)]},
+        # Lignes impaires
+        {"selector": "tr:nth-child(odd) td",
+         "props": [("background-color", _T_ROW_ODD)]},
+        # Hover
+        {"selector": "tr:hover td",
+         "props": [("background-color", "#EEF1F9")]},
+        # Table générale
+        {"selector": "",
+         "props": [("border-collapse", "collapse"),
+                   ("border-radius", "8px"),
+                   ("overflow", "hidden"),
+                   ("font-family", "Segoe UI, Calibri, DejaVu Sans, sans-serif")]},
+    ]
+
+def _style_last_row_total(styler, n_rows):
+    """Met en valeur la ligne Total (dernière ligne)."""
+    styler = styler.set_table_styles(
+        {n_rows - 1: [
+            {"selector": "",
+             "props": [("background-color", _T_TOTAL_BG),
+                       ("color", _T_TOTAL_FG),
+                       ("font-weight", "bold"),
+                       ("border-top", "2px solid #4A90D9")]},
+            # Forcer aussi sur td pour écraser les alternances de lignes
+            {"selector": "td",
+             "props": [("background-color", _T_TOTAL_BG),
+                       ("color", _T_TOTAL_FG),
+                       ("font-weight", "bold")]},
+        ]}, axis=1, overwrite=False)
+    return styler
+
+def _style_label_col(styler, col_name):
+    """
+    Colonne libellé (première colonne).
+    - En-tête (th) : fond bleu _T_SUBHD_BG, texte blanc
+    - Cellules (td) : fond clair _T_COL1_BG, texte sombre _T_TEXT, aligné à gauche
+    """
+    styler = styler.set_table_styles(
+        {col_name: [
+            # Style de l'en-tête th
+            {"selector": "",
+             "props": [("background-color", _T_SUBHD_BG),
+                       ("color", "#FFFFFF"),
+                       ("text-align", "left"),
+                       ("font-weight", "600")]},
+            # Style des cellules td — fond très clair + texte sombre lisible
+            {"selector": "td",
+             "props": [("background-color", _T_COL1_BG),
+                       ("color", _T_TEXT),
+                       ("text-align", "left"),
+                       ("font-weight", "500")]},
+        ]}, overwrite=False)
+    return styler
+
+def _color_pct(val):
+    """Coloration conditionnelle pour les cellules de variation en %."""
+    if not isinstance(val, str):
+        return ""
+    try:
+        v = float(val.replace("%", "").replace("+", "").replace(",", ".").replace(" ", ""))
+        if v > 0.5:
+            return f"background-color: {_T_POS_BG}; color: {_T_POS}; font-weight: bold"
+        elif v < -0.5:
+            return f"background-color: {_T_NEG_BG}; color: {_T_NEG}; font-weight: bold"
+    except Exception:
+        pass
+    return ""  # neutre : ne pas écraser le style td
+
+
 def Famille_acte_sorted(df):
     Famille_acte_sorted = []
     for i in list(sorted_Famille.keys()):
@@ -135,19 +248,19 @@ def TableConso(df,Emplacement_stockage,ID,backend):
     table = table[['famille_acte_aops','Nombre consommants','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge','Taux de couverture']].reset_index(drop=True).rename(columns={'famille_acte_aops':'Famille acte'})
     tableAvantMiseEnforme=table.copy() 
 
-    table[['Nombre consommants','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge']]=table[['Nombre consommants','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge']].applymap(formatM)
+    table[['Nombre consommants','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge']]=table[['Nombre consommants','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge']].map(formatM)
     table=table.rename(columns={'Famille acte':str(annee)})    
 
-    table=table.style.format({'Taux de couverture': "{:.0%}"})
-    table=table.set_table_styles({str(annee): [{'selector': '','props': [('background-color', '#2C67AF'),('text-align', 'left'),('color', 'white'),('font-size', '14px')]}]}).hide(axis='index')
-    table=table.set_table_styles({max(table.index): [{'selector': '','props': [('background-color', '#173A64'),('color', 'white'),('font-weight', 'bold'),('font-size', '14px')]}]}, axis=1, overwrite=False)  
-    table=table.set_table_styles({max(table.index): [{'selector': '','props': [('border', '2px solid #FFFFFF'),('font-size', '14px')]}]}, axis=1, overwrite=False)  
-    table=table.set_table_styles([{'selector': 'th:not(.index_name)','props': [('background-color', '#173A64'),('color', 'white'),('text-align', 'center'),('font-size', '14px')]}], overwrite=False)  
-    table=table.set_table_styles([{'selector': 'td','props': [('color', 'black'),('border-left', '2px solid #FFFFFF'),('border-right', '2px solid #FFFFFF'),('text-align', 'center'),('font-size', '14px')]}], overwrite=False)  
-    table=table.set_table_styles([{'selector': 'th','props': [('color', 'black'),('border', '2px solid #FFFFFF'),('font-size', '14px')]}], overwrite=False)  
-    table=table.set_properties(**{'text-align': 'right','width':'100px'})
-    annee=int(df['annee_soins'].unique())
-    st.dataframe(table)
+    n_rows = len(table.index)
+    table = (table.style
+             .format({'Taux de couverture': "{:.0%}"})
+             .set_table_styles(_base_table_styles(), overwrite=True)
+             .hide(axis='index'))
+    table = _style_label_col(table, str(annee))
+    table = _style_last_row_total(table, n_rows)
+    table = table.set_properties(**{'width': '100px', 'text-align': 'right'})
+    annee = int(df['annee_soins'].unique())
+    st.dataframe(table, use_container_width=True)
     
     try:
         dfi.export(table, Emplacement_stockage+"/"+str(annee)+'_tableConso.jpg',dpi=200,table_conversion=backend)
@@ -169,21 +282,26 @@ def table_N_vs_NMoins1(table1,table2,annee,Emplacement_stockage,backend):
     table = table.replace([np.inf, -np.inf], np.nan).fillna(0)
 
     # Mise en forme en pourcentage
-    table = table.applymap(lambda x: '{:.1%}'.format(x))
+    table = table.map(lambda x: '{:.1%}'.format(x))
 
 
     table=pd.concat([table2[['Famille acte']],table],axis=1).rename(columns={'Famille acte':str(annee)+' vs '+str(annee-1)})
     tableAvantMiseEnforme=table.copy()
 
-    table=table.style.set_table_styles({str(annee)+' vs '+str(annee-1): [{'selector': '','props': [('background-color', '#2C67AF'),('text-align', 'left'),('color', 'white'),('font-size', '14px')]}]}).hide(axis='index')
-    table=table.set_table_styles({max(table.index): [{'selector': '','props': [('background-color', '#173A64'),('color', 'white'),('font-weight', 'bold'),('font-size', '14px')]}]}, axis=1, overwrite=False)  
-    table=table.set_table_styles({max(table.index): [{'selector': '','props': [('border', '2px solid #FFFFFF'),('font-size', '14px')]}]}, axis=1, overwrite=False)  
-    table=table.set_table_styles([{'selector': 'th:not(.index_name)','props': [('background-color', '#173A64'),('color', 'white'),('text-align', 'center'),('font-size', '14px')]}], overwrite=False)  
-    table=table.set_table_styles([{'selector': 'td','props': [('color', 'black'),('border-left', '2px solid #FFFFFF'),('border-right', '2px solid #FFFFFF'),('text-align', 'center'),('font-size', '14px')]}], overwrite=False)  
-    table=table.set_table_styles([{'selector': 'th','props': [('color', 'black'),('border', '2px solid #FFFFFF'),('font-size', '14px')]}], overwrite=False)  
-    table=table.set_properties(**{'text-align': 'right','width':'100px'})
+    col_label = str(annee) + ' vs ' + str(annee-1)
+    n_rows    = len(table.index)
+    num_cols  = [c for c in table.columns if c != col_label]
 
-    st.dataframe(table)
+    table = (table.style
+             .set_table_styles(_base_table_styles(), overwrite=True)
+             .hide(axis='index'))
+    table = _style_label_col(table, col_label)
+    # Coloration conditionnelle : vert/rouge sur toutes les colonnes de variation
+    table = table.map(_color_pct, subset=num_cols)
+    table = _style_last_row_total(table, n_rows)
+    table = table.set_properties(**{'width': '100px', 'text-align': 'right'})
+
+    st.markdown(table.to_html(), unsafe_allow_html=True)
     try:
         dfi.export(table, Emplacement_stockage+"/"+str(annee)+'_vs_'+str(annee-1)+'_'+'_tableConso.jpg',dpi=200,table_conversion=backend)
     except:
@@ -191,31 +309,57 @@ def table_N_vs_NMoins1(table1,table2,annee,Emplacement_stockage,backend):
     return tableAvantMiseEnforme
 
 
-def format_table_Sousfamille(table,annee):
-    table=table.set_table_styles([
-    {'selector': 'tr:nth-child(even)','props': [('background-color', '#ffffff'),('color', 'black')]},
-    {'selector': 'tr:nth-child(odd)','props': [('background-color', '#cccccc'),('color', 'black')]}], overwrite=False)
+def format_table_Sousfamille(table, annee):
+    """
+    Mise en forme moderne pour les tables sous-familles.
+    Design : épuré, lisible, cohérent avec la charte graphique.
+    """
+    n_rows = len(table.index)
 
-    # 3 colonnes : index, RC, T%
-    table=table.set_table_styles({str(annee): [{'selector': '','props': [('background-color', '#2C67AF'),('text-align', 'left'),('color', 'white'),('font-size', '14px')]}]}, overwrite=False).hide(axis='index')
-    table=table.set_table_styles({'Remboursement complémentaire': [{'selector': '','props': [('background-color', '#2B3885'),('text-align', 'center'),('color', 'white'),('font-size', '14px')]}]}, overwrite=False)
-    table=table.set_table_styles({'Taux de couverture': [{'selector': '','props': [('background-color', '#662064'),('text-align', 'center'),('color', 'white'),('font-size', '14px')]}]}, overwrite=False)
+    # Base
+    table = table.set_table_styles(_base_table_styles(), overwrite=True)
+    table = table.hide(axis='index')
 
-    # Dernière ligne
-    table=table.set_table_styles({max(table.index): [{'selector': '','props': [('background-color', '#173A64'),('color', 'white'),('font-weight', 'bold'),('font-size', '14px')]}]}, axis=1, overwrite=False)  
-    table=table.set_table_styles({max(table.index): [{'selector': '','props': [('border', '1px solid #FFFFFF'),('font-size', '14px')]}]}, axis=1, overwrite=False) 
+    # Colonne libellé (année) : fond bleu, texte blanc, aligné à gauche
+    table = _style_label_col(table, str(annee))
 
-    # Première ligne
-    table=table.set_table_styles([{'selector': 'th:not(.index_name)','props': [('background-color', '#173A64'),('color', 'white'),('text-align', 'center'),('font-size', '14px')]}], overwrite=False) 
-    table=table.set_table_styles([{'selector': 'td','props': [('color', 'black'),('border-left', '1px solid #FFFFFF'),('border-right', '1px solid #FFFFFF'),('text-align', 'center'),('font-size', '14px')]}], overwrite=False)  
-    table=table.set_table_styles([{'selector': 'th','props': [('color', 'black'),('border', '1px solid #FFFFFF'),('font-size', '14px')]}], overwrite=False) 
+    # Colonne Remboursement complémentaire : accent bleu foncé
+    if 'Remboursement complémentaire' in [c for c in table.columns]:
+        table = table.set_table_styles(
+            {'Remboursement complémentaire': [
+                {"selector": "th",
+                 "props": [("background-color", _T_SUBHD2_BG),
+                           ("color", "#FFFFFF"),
+                           ("text-align", "center")]},
+                {"selector": "td",
+                 "props": [("background-color", "#FFFFFF"),
+                           ("color", "#2B3885"),
+                           ("text-align", "center")]}
+            ]}, overwrite=False)
 
-    # largeur colonne
-    table=table.set_properties(**{'text-align': 'right','width':'100px'})
+    # Colonne Taux de couverture : accent violet discret
+    if 'Taux de couverture' in [c for c in table.columns]:
+        table = table.set_table_styles(
+            {'Taux de couverture': [
+                {"selector": "th",
+                 "props": [("background-color", "#4A3570"),
+                           ("color", "#FFFFFF"),
+                           ("text-align", "center")]},
+                {"selector": "td",
+                 "props": [("background-color", "#FFFFFF"),
+                           ("color", "#4A3570"),
+                           ("text-align", "center")]}
+            ]}, overwrite=False)
+
+    # Ligne Total (dernière)
+    table = _style_last_row_total(table, n_rows)
+
+    # Largeur colonnes
+    table = table.set_properties(**{'width': '100px', 'text-align': 'right'})
 
     return table
 
-def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouclée,backend):
+def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouclée,backend="chrome"):
 
     st.write(f"{Variable_bouclée} : {len(df[df[mesure].isna()])} lignes n'ont pas de sous famille renseignées. Soit {formatM(df[df[mesure].isna()]['RC'].sum())}€ de remboursement complémentaire")
     
@@ -284,7 +428,7 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
     table=table.style.format({'Taux de couverture': "{:.1%}"})
 
     table=format_table_Sousfamille(table,annee)
-    st.dataframe(table)
+    st.dataframe(table, use_container_width=True)
     try:
         dfi.export(table, Emplacement_stockage+"/"+'table_détails_'+str(mesure)+'_'+str(Variable_bouclée)+'_'+str(annee)+'.jpg',dpi=100,table_conversion=backend)
     except:
@@ -308,16 +452,25 @@ def comparaison_sf_n_n_1(tn,tn_1,Emplacement_stockage,annee,mesure,Variable_bouc
     res = tn_common / tn_1_common - 1
 
     # Formatage conditionnel
-    res = res.applymap(
+    res = res.map(
         lambda x: '{:.1%}'.format(x) if (0.00001 < abs(x) < 1000 or x == 0) else ""
     )
     table = res.reset_index().rename(columns={mesure:str(annee)+' vs '+str(annee-1)})
 
-    tableAvantMiseEnforme=table.copy()
-    table=table.style.set_table_styles({str(annee)+' vs '+str(annee-1): [{'selector': '','props': [('background-color', '#2C67AF'),('text-align', 'left'),('color', 'white'),('font-size', '14px')]}]}).hide(axis='index')
-    table=format_table_Sousfamille(table,annee)
+    tableAvantMiseEnforme = table.copy()
+    col_label = str(annee) + ' vs ' + str(annee-1)
+    num_cols  = [c for c in table.columns if c != col_label]
+    table = (table.style
+             .set_table_styles(_base_table_styles(), overwrite=True)
+             .hide(axis='index'))
+    table = _style_label_col(table, col_label)
+    table = table.map(_color_pct, subset=num_cols)
+    table = _style_last_row_total(table, len(table.index))
+    table = table.set_properties(**{'width': '100px', 'text-align': 'right'})
 
-    st.dataframe(table)
+    
+
+    st.markdown(table.to_html(), unsafe_allow_html=True)
     
     try:
         dfi.export(table, Emplacement_stockage+"/"+'table_détails_sf_n_n_1_'+str(mesure)+'_'+str(Variable_bouclée)+'_'+str(annee)+"_vs_"+str(annee-1)+'.jpg',dpi=100,table_conversion=backend)
@@ -443,9 +596,9 @@ def style_pivot_dentaire(pt):
 
     def highlight_total(row):
         if row.name == 'Total':
-            return ['background-color:#F7DFE2; color:#173A64; font-weight:bold'] * len(row)
+            return ['background-color:#EEF1F9; color:#1A2440; font-weight:bold'] * len(row)
         else:
-            return ['background-color:#FFFFFF; color:#173A64; font-weight:bold'] * len(row)
+            return ['background-color:#FFFFFF; color:#1A2440; font-weight:bold'] * len(row)
 
     # 🔹 Bordures blanches par bloc level 0 (CORRIGÉ)
     border_styles = []
@@ -499,7 +652,7 @@ def style_pivot_dentaire(pt):
             {
                 'selector': 'th.col_heading.level1',
                 'props': [
-                    ('background-color', '#0070C0'),
+                    ('background-color', '#2C67AF'),
                     ('color', 'white'),
                     ('font-weight', 'bold'),
                     ('text-align', 'center'),
@@ -627,8 +780,8 @@ def table_optique(df):
     return pt
 
 
-HEADER_BG = "#17375E"
-SUBHEADER_BG = "#4F81BD"
+HEADER_BG = "#1A2440"
+SUBHEADER_BG = "#2C67AF"
 MONTURE_BG = "#F8E1E4"
 VERRES_BG = "#EAD1DC"
 TOTAL_BG = "#C27BA0"
@@ -752,7 +905,7 @@ def table_100_sante(df,Emplacement_stockage,backend):
     elif df['famille_acte_aops'].iloc[0]=='Dentaire':
         pt = table_dentaire(df)
         table=style_pivot_dentaire(pt)
-        st.dataframe(table)
+        st.dataframe(table, use_container_width=True)
         try:
             dfi.export(table, Emplacement_stockage+"/"+'table_100_sante_dentaire.jpg',dpi=100,table_conversion=backend)
         except:
@@ -760,7 +913,7 @@ def table_100_sante(df,Emplacement_stockage,backend):
     elif df['famille_acte_aops'].iloc[0]=='Optique':
         pt = table_optique(df)
         table = apply_pivot_style_optique(pt)
-        st.dataframe(table)
+        st.dataframe(table, use_container_width=True)
         try:
             dfi.export(table, Emplacement_stockage+"/"+'table_100_sante_optique.jpg',dpi=100,table_conversion=backend)
         except:
@@ -768,7 +921,7 @@ def table_100_sante(df,Emplacement_stockage,backend):
     elif df['sous_famille'].iloc[0]=='Audioprothèses':
         pt = table_optique(df)
         table = apply_pivot_style_optique(pt)
-        st.dataframe(table)
+        st.dataframe(table, use_container_width=True)
         try:
             dfi.export(table, Emplacement_stockage+"/"+'table_100_sante_audioprothèses.jpg',dpi=100,table_conversion=backend)
         except:

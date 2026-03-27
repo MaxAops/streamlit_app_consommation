@@ -419,7 +419,7 @@ def calculer_bins_labels_equilibres(df, var, min_pct=0.05, max_pct=0.3, max_bins
 
     cleaned_bins.append(np.inf)
     labels = [
-        f"[{cleaned_bins[i]}-{cleaned_bins[i+1]}["
+        f"{cleaned_bins[i]}-{cleaned_bins[i+1]}"
         if cleaned_bins[i+1] != np.inf else f"+{cleaned_bins[i]}"
         for i in range(len(cleaned_bins) - 1)
     ]
