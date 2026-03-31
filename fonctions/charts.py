@@ -347,63 +347,130 @@ def distributionFamilleActes(df,annee,Emplacement_stockage,qualitéGraphique):
 
 # ── 4. ÉVOLUTION CONSO MOYENNE ───────────────────────────────────────────────
 
-def Evo_Cons_Moyenne(df,qualitéGraphique,Emplacement_stockage,ID):
-    df=df.copy();df["annee_soins"]=df["annee_soins"].fillna(0).astype(int)
-    nb_surv=df["annee_soins"].nunique()
-    if nb_surv<2: st.warning("Pas assez de survenances."); return
-    table=(pd.pivot_table(df,values="RC",index=["famille_acte_aops"],
-                          columns="annee_soins",aggfunc=np.sum,fill_value=0)
-           .reindex(Famille_acte_sorted(df)))
-    tableEff=(pd.pivot_table(df,values=ID,index="famille_acte_aops",
-                              columns="annee_soins",aggfunc=pd.Series.nunique)
-              .reindex(Famille_acte_sorted(df)))
-    n=min(nb_surv,3)
-    table=table[table.columns[-n:]];tableEff=tableEff[tableEff.columns[-n:]]
-    sub=df[df["annee_soins"]>=table.columns.min()]
-    row_rc=pd.DataFrame({c:[sub[sub["annee_soins"]==c]["RC"].sum()] for c in table.columns},index=["Total"])
-    row_eff=pd.DataFrame({c:[sub[sub["annee_soins"]==c][ID].nunique()] for c in tableEff.columns},index=["Total"])
-    table=pd.concat([table,row_rc]);tableEff=pd.concat([tableEff,row_eff])
-    for col in table.columns: table[col]=table[col]/tableEff[col]
-    cols=list(table.columns);evol_cols=[]
-    if nb_surv>=3:
-        c0,c1,c2=cols[0],cols[1],cols[2]
-        table[f"{c1}/{c0}"]=(table[c1]-table[c0])/table[c0]*100
-        table[f"{c2}/{c0}"]=(table[c2]-table[c0])/table[c0]*100
-        table[f"{c2}/{c1}"]=(table[c2]-table[c1])/table[c1]*100
-        evol_cols=[f"{c1}/{c0}",f"{c2}/{c0}",f"{c2}/{c1}"]
+def Evo_Cons_Moyenne(df, qualitéGraphique, Emplacement_stockage, ID):
+    df = df.copy()
+    df["annee_soins"] = df["annee_soins"].fillna(0).astype(int)
+    nb_surv = df["annee_soins"].nunique()
+    if nb_surv < 2:
+        st.warning("Pas assez de survenances."); return
+
+    # ── Calcul tables RC et effectifs ────────────────────────────────────────
+    table = (pd.pivot_table(df, values="RC", index=["famille_acte_aops"],
+                             columns="annee_soins", aggfunc=np.sum, fill_value=0)
+             .reindex(Famille_acte_sorted(df)))
+    tableEff = (pd.pivot_table(df, values=ID, index="famille_acte_aops",
+                                columns="annee_soins", aggfunc=pd.Series.nunique)
+                .reindex(Famille_acte_sorted(df)))
+    n = min(nb_surv, 3)
+    table    = table[table.columns[-n:]]
+    tableEff = tableEff[tableEff.columns[-n:]]
+    sub = df[df["annee_soins"] >= table.columns.min()]
+    row_rc  = pd.DataFrame({c: [sub[sub["annee_soins"]==c]["RC"].sum()]   for c in table.columns},    index=["Total"])
+    row_eff = pd.DataFrame({c: [sub[sub["annee_soins"]==c][ID].nunique()] for c in tableEff.columns}, index=["Total"])
+    table    = pd.concat([table,    row_rc])
+    tableEff = pd.concat([tableEff, row_eff])
+    for col in table.columns:
+        table[col] = table[col] / tableEff[col]
+
+    # ── Calcul évolutions ────────────────────────────────────────────────────
+    cols = list(table.columns); evol_cols = []
+    if nb_surv >= 3:
+        c0, c1, c2 = cols[0], cols[1], cols[2]
+        table[f"{c1}/{c0}"] = (table[c1]-table[c0]) / table[c0] * 100
+        table[f"{c2}/{c0}"] = (table[c2]-table[c0]) / table[c0] * 100
+        table[f"{c2}/{c1}"] = (table[c2]-table[c1]) / table[c1] * 100
+        evol_cols = [f"{c1}/{c0}", f"{c2}/{c0}", f"{c2}/{c1}"]
     else:
-        c0,c1=cols[0],cols[1]
-        table[f"{c1}/{c0}"]=(table[c1]-table[c0])/table[c0]*100
-        evol_cols=[f"{c1}/{c0}"]
-    if "Divers" in table.index: table=table.drop(index="Divers")
-    surv_all=sorted(df["annee_soins"].unique())
-    fig=_make_fig(16,8)
-    title_h=_strip_title(fig,"Évolution de la consommation moyenne par consommant",
-                         subtitle=f"Survenances {surv_all[0]} – {surv_all[-1]}  ·  Variation en %")
-    comm_h=0.06
-    ax=_add_main_ax(fig,[0.06,comm_h+0.01,0.90,1-title_h-0.04-comm_h])
-    bar_w=0.22;n_evol=len(evol_cols);x=np.arange(len(table))
-    offsets=np.linspace(-(n_evol-1)/2,(n_evol-1)/2,n_evol)*bar_w
-    for i,(col,off) in enumerate(zip(evol_cols,offsets)):
-        vals=table[col].values
-        for xi,v in enumerate(vals):
-            ax.bar(xi+off,v,width=bar_w*0.92,color=_color_sign(v),
-                   alpha=0.80,edgecolor=BG,linewidth=0.8,zorder=3)
-            sign="+" if v>=0 else ""
-            ax.text(xi+off,v+(0.4 if v>=0 else -0.7),f"{sign}{v:.1f}%",
-                    ha="center",va="bottom" if v>=0 else "top",
-                    fontsize=12.5,fontweight="bold",color=_color_sign(v))
-    ax.axhline(0,color=C_ZERO,linewidth=1.2,zorder=2)
-    ax.set_xticks(x);ax.set_xticklabels(table.index,fontsize=12.5,rotation=0)
-    ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}%"))
-    _apply_ax_theme(ax)
-    pad_pct=(ax.get_ylim()[1]-ax.get_ylim()[0])*0.15
-    ax.set_ylim(ax.get_ylim()[0]-pad_pct,ax.get_ylim()[1]+pad_pct)
-    ax.legend(handles=[mpatches.Patch(color=HEX[i],label=col) for i,col in enumerate(evol_cols)],
-              loc="lower center",bbox_to_anchor=(0.5,-0.18),
-              ncol=n_evol,fontsize=12,frameon=False)
-    title=f"Évolution conso moyenne {surv_all[0]}-{surv_all[-1]}"
-    _finalize(fig,f"{Emplacement_stockage}/{title}.jpg",qualitéGraphique)
+        c0, c1 = cols[0], cols[1]
+        table[f"{c1}/{c0}"] = (table[c1]-table[c0]) / table[c0] * 100
+        evol_cols = [f"{c1}/{c0}"]
+
+    if "Divers" in table.index:
+        table = table.drop(index="Divers")
+
+    # ── surv_all et date_max — après n est connu ──────────────────────────────
+    surv_all = sorted(df["annee_soins"].unique())
+    title    = f"Évolution conso moyenne {surv_all[0]}-{surv_all[-1]}"
+
+    date_max_str = ""
+    if "date_paiement" in df.columns:
+        df["date_paiement"] = pd.to_datetime(df["date_paiement"], errors="coerce")
+        dates = df.groupby("annee_soins")["date_paiement"].max()
+        dates_filtrees = dates[dates.index.isin(surv_all[-n:])]
+        parties = [f"{int(a)} arrétée au {d.strftime('%d/%m/%Y')}"
+                   for a, d in dates_filtrees.items() if pd.notna(d)]
+        date_max_str = "  ·  " + "  |  ".join(parties) if parties else ""
+
+    fig     = _make_fig(16, 8)
+    title_h = _strip_title(fig,
+                "Évolution de la consommation moyenne par consommant",
+                subtitle=f"Survenances {surv_all[0]} – {surv_all[-1]}  ·  Variation en %{date_max_str}")
+    comm_h  = 0.06
+    ax      = _add_main_ax(fig, [0.06, comm_h+0.01, 0.90, 1-title_h-0.04-comm_h])
+
+    # ── CAS >= 3 SURVENANCES : ancienne structure, couleurs palette ──────────
+    if nb_surv >= 3:
+        x       = np.arange(len(table))
+        n_evol  = len(evol_cols)
+        bar_w   = 0.65 / n_evol
+
+        for ei, col in enumerate(evol_cols):
+            off   = (ei - (n_evol-1)/2) * bar_w
+            vals  = table[col].values
+            color = PALETTE[ei % len(PALETTE)]
+            ax.bar(x + off, vals, width=bar_w*0.92, color=color,
+                   alpha=0.88, edgecolor=BG, linewidth=0.8, zorder=3)
+            ymin_ax, ymax_ax = ax.get_ylim()
+            pad = (ymax_ax - ymin_ax) * 0.2 if ymax_ax != ymin_ax else 1
+            for xi, v in enumerate(vals):
+                sign = "+" if v >= 0 else ""
+                ax.annotate(f"{sign}{v:.0f}%",
+                    xy=(x[xi] + off, v + (pad*0.25 if v >= 0 else -pad*0.35)),
+                    ha="center", va="bottom" if v >= 0 else "top",
+                    size=12, xytext=(0, 8), textcoords="offset points",
+                    rotation=0, color="#1A2440")
+
+        ax.axhline(0, color=C_ZERO, linewidth=1.2, zorder=2)
+        ax.set_xticks(x)
+        ax.set_xticklabels(table.index, fontsize=14, rotation=0)
+        ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}%"))
+        _apply_ax_theme(ax)
+        ymin_ax, ymax_ax = ax.get_ylim()
+        pad = (ymax_ax - ymin_ax) * 0.2
+        ax.set_ylim(ymin_ax - pad, ymax_ax + pad)
+        ax.legend(
+            handles=[mpatches.Patch(color=PALETTE[i], label=col)
+                     for i, col in enumerate(evol_cols)],
+            loc="lower center", bbox_to_anchor=(0.5, -0.18),
+            ncol=n_evol, fontsize=16, frameon=False)
+
+    # ── CAS 2 SURVENANCES : vert/rouge, sans cubes ───────────────────────────
+    else:
+        bar_w   = 0.22
+        n_evol  = len(evol_cols)
+        x       = np.arange(len(table))
+        offsets = np.linspace(-(n_evol-1)/2, (n_evol-1)/2, n_evol) * bar_w
+
+        for i, (col, off) in enumerate(zip(evol_cols, offsets)):
+            vals = table[col].values
+            for xi, v in enumerate(vals):
+                ax.bar(xi+off, v, width=bar_w*0.92, color=_color_sign(v),
+                       alpha=0.80, edgecolor=BG, linewidth=0.8, zorder=3)
+                sign = "+" if v >= 0 else ""
+                ax.text(xi+off, v+(0.4 if v >= 0 else -0.7),
+                        f"{sign}{v:.1f}%",
+                        ha="center", va="bottom" if v >= 0 else "top",
+                        fontsize=13.5, fontweight="bold", color=_color_sign(v))
+
+        ax.axhline(0, color=C_ZERO, linewidth=1.2, zorder=2)
+        ax.set_xticks(x)
+        ax.set_xticklabels(table.index, fontsize=12.5, rotation=0)
+        ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}%"))
+        _apply_ax_theme(ax)
+        pad_pct = (ax.get_ylim()[1]-ax.get_ylim()[0]) * 0.15
+        ax.set_ylim(ax.get_ylim()[0]-pad_pct, ax.get_ylim()[1]+pad_pct)
+
+    _finalize(fig, f"{Emplacement_stockage}/{title}.jpg", qualitéGraphique)
 
 # ── 5. ÉVOLUTION NB CONSOMMATEURS ────────────────────────────────────────────
 
@@ -576,8 +643,6 @@ def EVO_Montant(df,var,qualitéGraphique,Emplacement_stockage):
     _kpi_row(fig,kpis,bottom=comm_h,height=kpi_h)
     if delta_txt:
         a1,a0=sorted(annees)[-1],sorted(annees)[-2]
-        _comment_banner(fig,f"En {a1}, le {name} a évolué de {delta_txt} vs {a0}.",
-                        bottom=0,height=comm_h)
     title=f"Évolution mensuelle {name}"
     _finalize(fig,f"{Emplacement_stockage}/{title}.jpg",qualitéGraphique)
 
@@ -779,7 +844,7 @@ def dispertion_chart_comparaison(df,var_montant,element_titre,
                 else f"{', '.join(element_titre)}  ·  Dispersion Remboursement Complémentaire")
     fig=_make_fig(13,7)
     title_h=_strip_title(fig,main_title,
-                         subtitle="Nombre de consommants par tranche (annotations)")
+                         subtitle="Nombre de consommants par tranche")
     ax=_add_main_ax(fig,[0.06,0.10,0.90,1-title_h-0.04-0.10])
     sns.barplot(x="Tranche",y=var_montant,hue="Survenance",data=t,ax=ax,
                 palette=bar_colors,
@@ -787,9 +852,9 @@ def dispertion_chart_comparaison(df,var_montant,element_titre,
                 edgecolor=BG,linewidth=0.8,zorder=3)
     _apply_ax_theme(ax)
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
-    ax.set_xlabel("Tranches de montants",fontsize=11)
-    ax.set_ylabel("Remboursement Complémentaire",fontsize=11)
-    plt.xticks(rotation=0,ha="right",fontsize=11.5)
+    ax.set_xlabel("Tranches de montants",fontsize=12)
+    ax.set_ylabel("Remboursement Complémentaire",fontsize=12)
+    plt.xticks(rotation=0,ha="center",fontsize=12.5)
     moy_rc=t[var_montant].replace(0,np.nan).mean()
     for p in ax.patches:
         val_rc=p.get_height()
@@ -799,7 +864,7 @@ def dispertion_chart_comparaison(df,var_montant,element_titre,
             ax.annotate(f"{formatM(nb)}",
                 xy=(p.get_x()+p.get_width()/2.,val_rc+(moy_rc or 0)/25),
                 ha="center",va="bottom",fontweight="bold",
-                color=C_ANNOT,fontsize=9,rotation=90)
+                color=C_ANNOT,fontsize=14,rotation=0)
     ax.legend(title="Survenances",loc="best",fontsize=12.5,frameon=False)
     title=f"Dispersion RC {'_'.join(element_titre)}"
     _finalize(fig,f"{Emplacement_stockage}/dispersion_conso_{''.join(element_titre)}.jpg",

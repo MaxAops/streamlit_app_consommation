@@ -178,13 +178,13 @@ def _style_label_col(styler, col_name):
             {"selector": "",
              "props": [("background-color", _T_SUBHD_BG),
                        ("color", "#FFFFFF"),
-                       ("text-align", "left"),
+                       ("text-align", "center"),
                        ("font-weight", "600")]},
             # Style des cellules td — fond très clair + texte sombre lisible
             {"selector": "td",
              "props": [("background-color", _T_COL1_BG),
                        ("color", _T_TEXT),
-                       ("text-align", "left"),
+                       ("text-align", "center"),
                        ("font-weight", "500")]},
         ]}, overwrite=False)
     return styler
@@ -330,11 +330,13 @@ def format_table_Sousfamille(table, annee):
                 {"selector": "th",
                  "props": [("background-color", _T_SUBHD2_BG),
                            ("color", "#FFFFFF"),
-                           ("text-align", "center")]},
+                           ("text-align", "center"),
+                           ("font-size", "14px")]},
                 {"selector": "td",
                  "props": [("background-color", "#FFFFFF"),
                            ("color", "#2B3885"),
-                           ("text-align", "center")]}
+                           ("text-align", "right"),
+                           ("font-size", "14px")]}
             ]}, overwrite=False)
 
     # Colonne Taux de couverture : accent violet discret
@@ -344,18 +346,20 @@ def format_table_Sousfamille(table, annee):
                 {"selector": "th",
                  "props": [("background-color", "#4A3570"),
                            ("color", "#FFFFFF"),
-                           ("text-align", "center")]},
+                           ("text-align", "center"),
+                           ("font-size", "14px")]},
                 {"selector": "td",
                  "props": [("background-color", "#FFFFFF"),
                            ("color", "#4A3570"),
-                           ("text-align", "center")]}
+                           ("text-align", "center"),
+                           ("font-size", "14px")]}
             ]}, overwrite=False)
 
     # Ligne Total (dernière)
     table = _style_last_row_total(table, n_rows)
 
     # Largeur colonnes
-    table = table.set_properties(**{'width': '100px', 'text-align': 'right'})
+    table = table.set_properties(**{'width': '100px', 'text-align': 'center'})
 
     return table
 

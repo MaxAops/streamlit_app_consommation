@@ -15,6 +15,7 @@ try:
     from pages_AppliAnalyseSanté_V2_1.page_100p100Santé import _100p100Santé
     from pages_AppliAnalyseSanté_V2_1.page_etude_sous_famille import etude_sous_famille
     from pages_AppliAnalyseSanté_V2_1.page_etude_prix import etude_prix
+    from pages_AppliAnalyseSanté_V2_1.page_effectifs import page_effectifs
 except ImportError as e:
     st.error(f"Erreur lors de l'importation des modules : {e}")
     st.stop()
@@ -24,13 +25,13 @@ st.set_page_config(page_title="Application Consommation Santé", layout="wide")
 # ── Session state ─────────────────────────────────────────────────────────────
 if "donnees"           not in st.session_state: st.session_state["donnees"]           = None
 if "repertoire_images" not in st.session_state: st.session_state["repertoire_images"] = None
-if "Qualité images"    not in st.session_state: st.session_state["Qualité images"]    = 100
+if "Qualité images"    not in st.session_state: st.session_state["Qualité images"]    = 120
 if "page"              not in st.session_state: st.session_state["page"]              = "Accueil"
 if "galerie_selection" not in st.session_state: st.session_state["galerie_selection"] = set()
 
 PAGES = [
-    "Accueil", "Charger les données", "Tables consommations",
-    "Dispersion des coûts", "Analyse générale",
+    "Accueil", "Tables consommations",
+    "Dispersion des coûts", "Analyse générale","Effectifs",
     "Comparaison entre survenances", "Etude sous famille",
     "Etude prix", "100% santé", "Cadencements & PSAP",
 ]
@@ -350,11 +351,12 @@ elif st.session_state["page"] in [
     else:
         st.title(st.session_state["page"])
         p = st.session_state["page"]
-        if   p == "Tables consommations":         tableConso()
+        if   p == "Tables consommations":          tableConso()
         elif p == "Dispersion des coûts":          Dispersion()
         elif p == "Analyse générale":              Analyse_generale()
         elif p == "Comparaison entre survenances": comparaison_survenances()
         elif p == "100% santé":                    _100p100Santé()
         elif p == "Etude sous famille":            etude_sous_famille()
         elif p == "Etude prix":                    etude_prix()
+        elif p == "Effectifs":                     page_effectifs()
         elif p == "Cadencements & PSAP":           cadencement_PSAP()
