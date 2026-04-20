@@ -123,6 +123,10 @@ def format_string_with_linebreak(input_string, max_width=15): # utilisé dans le
 
     return formatted_string
 
+def fmt(x):
+    return f"{int(x):,} €".replace(",", " ")
+
+
 
 def calculate_max_diff(row, col, df,result_df):
     x = df.iloc[row, col]  # Valeur cible (x)
@@ -293,19 +297,7 @@ def correction_dates_integrale(df_raw, col):
 
 
 def optimal_bins(data, min_bin_size=0.05, max_bin_size=0.2, initial_bins=20):
-    """
-    Crée des tranches optimales pour une variable continue avec des labels entiers.
-
-    Args:
-        data (array-like): Les montants à binner.
-        min_bin_size (float): Proportion minimale de données par bin (ex: 0.05 = 5%).
-        max_bin_size (float): Proportion maximale de données par bin.
-        initial_bins (int): Nombre de bins de départ à tester.
-
-    Returns:
-        bins (list): Liste des bornes de tranches.
-        labels (list): Libellés des tranches.
-    """
+    
     data = np.sort(np.array(data))
     n = len(data)
 
@@ -354,75 +346,139 @@ def optimal_bins(data, min_bin_size=0.05, max_bin_size=0.2, initial_bins=20):
 
 
 
-def calculer_bins_labels_equilibres(df, var, min_pct=0.05, max_pct=0.3, max_bins=20, multiple=5):
-    q1, q3 = np.percentile(df[var], [15, 85])
+def calculer_bins_labels_equilibres(
+    df,
+    var,
+    min_pct=0.03,
+    max_pct=0.25,
+    min_bins=8,
+    max_bins=20,
+    multiple=5):
+
+
+
+
+    data = df[var].dropna().values
+
+    if len(data) == 0:
+        raise ValueError("Aucune donnée exploitable.")
+
+    q1, q3 = np.percentile(data, [25, 75])  # ✔ standard
     iqr = q3 - q1
-    lower_bound = q1 - 1.5 * iqr
-    upper_bound = q3 + 1.5 * iqr
 
-    df_cleaned = df[(df[var] >= lower_bound) & (df[var] <= upper_bound)].copy()
-    n = len(df_cleaned)
+    if iqr == 0:
+        raise ValueError("IQR nul.")
 
-    if iqr == 0 or n == 0:
-        raise ValueError("Données insuffisantes ou IQR nul pour effectuer le binning.")
+    lower = q1 - 1.5 * iqr
+    upper = q3 + 1.5 * iqr
+
+    data = data[(data >= lower) & (data <= upper)]
+    n = len(data)
+
+    if n == 0:
+        raise ValueError("Données insuffisantes après nettoyage.")
+
 
     bin_width = 2 * iqr / np.cbrt(n)
     bin_width = max(multiple, round(bin_width / multiple) * multiple)
 
-    min_val = max(0, (df_cleaned[var].min() // multiple) * multiple)
-    max_val = np.ceil(df_cleaned[var].max() / multiple) * multiple
+    min_val = max(0, (data.min() // multiple) * multiple)
+    max_val = np.ceil(data.max() / multiple) * multiple
 
     bins = list(range(int(min_val), int(max_val) + int(bin_width), int(bin_width)))
 
-    if len(bins) > max_bins:
+    # Limite max_bins
+    if len(bins) - 1 > max_bins:
         range_val = max_val - min_val
         bin_width = max(multiple, round((range_val / max_bins) / multiple) * multiple)
         bins = list(range(int(min_val), int(max_val) + int(bin_width), int(bin_width)))
 
-    counts, _ = np.histogram(df_cleaned[var], bins=bins)
+    # ─────────────────────────────
+    # 3. Fusion des bins (min_pct + largeur)
+    # ─────────────────────────────
+    counts, _ = np.histogram(data, bins=bins)
+
     seuil_bas = min_pct * n
     seuil_haut = max_pct * n
+    min_width = multiple * 3
 
     new_bins = [bins[0]]
     current_count = 0
+
     for i in range(len(counts)):
         current_count += counts[i]
-        if current_count >= seuil_bas:
-            new_bins.append(bins[i + 1])
+
+        start = new_bins[-1]
+        end = bins[i + 1]
+        width = end - start
+
+        if current_count >= seuil_bas and width >= min_width:
+            new_bins.append(end)
             current_count = 0
+
     if new_bins[-1] != bins[-1]:
         new_bins.append(bins[-1])
 
+    # ─────────────────────────────
+    # 4. Split des gros bins
+    # ─────────────────────────────
     final_bins = [new_bins[0]]
+
     for i in range(len(new_bins) - 1):
         start = new_bins[i]
         end = new_bins[i + 1]
-        mask = (df_cleaned[var] >= start) & (df_cleaned[var] < end)
+
+        mask = (data >= start) & (data < end)
         count = mask.sum()
 
         if count > seuil_haut:
             n_sub = int(np.ceil(count / seuil_haut))
-            sub_bin_width = max(multiple, round((end - start) / n_sub / multiple) * multiple)
-            sub_bins = list(range(start, end, sub_bin_width))
+            sub_width = max(min_width, round((end - start) / n_sub / multiple) * multiple)
+
+            sub_bins = list(range(int(start), int(end), int(sub_width)))
             if sub_bins[-1] < end:
                 sub_bins.append(end)
+
             final_bins += sub_bins[1:]
         elif count > 0:
             final_bins.append(end)
 
-    # Suppression des bins vides
+    # ─────────────────────────────
+    # 5. Nettoyage des petites tranches
+    # ─────────────────────────────
     cleaned_bins = [final_bins[0]]
-    for i in range(len(final_bins) - 1):
-        mask = (df_cleaned[var] >= final_bins[i]) & (df_cleaned[var] < final_bins[i + 1])
-        if mask.sum() > 0:
-            cleaned_bins.append(final_bins[i + 1])
 
+    for i in range(1, len(final_bins)):
+        if final_bins[i] - cleaned_bins[-1] < min_width:
+            continue
+        cleaned_bins.append(final_bins[i])
+
+    # ─────────────────────────────
+    # 6. Forcer min_bins si besoin
+    # ─────────────────────────────
+    if len(cleaned_bins) - 1 < min_bins:
+        quantiles = np.linspace(0, 1, min_bins + 1)
+        forced_bins = np.quantile(data, quantiles)
+
+        forced_bins = np.unique([
+            int(round(b / multiple) * multiple)
+            for b in forced_bins
+        ])
+
+        cleaned_bins = list(forced_bins)
+
+    # ─────────────────────────────
+    # 7. Ajout borne infinie + labels
+    # ─────────────────────────────
+    cleaned_bins = sorted(set(cleaned_bins))
     cleaned_bins.append(np.inf)
+    
+   
+
     labels = [
-        f"{cleaned_bins[i]}-{cleaned_bins[i+1]}"
-        if cleaned_bins[i+1] != np.inf else f"+{cleaned_bins[i]}"
+        f"{fmt(cleaned_bins[i])}-{fmt(cleaned_bins[i+1])}"
+        if cleaned_bins[i+1] != np.inf else f"+{fmt(cleaned_bins[i])}"
         for i in range(len(cleaned_bins) - 1)
     ]
 
     return cleaned_bins, labels
-    

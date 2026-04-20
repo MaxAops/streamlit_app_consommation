@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import openpyxl
-
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+   
 from fonctions.workOnData import formatM
 
 
@@ -34,8 +36,8 @@ Hospitalisation={'Honoraires':1,
 L_Hospitalisation=sorted(Hospitalisation, key=Hospitalisation.get)
 
 
-CS={'Spécialistes':1,
-                 'Généralistes':2,
+CS={'Généralistes':1,
+                 'Spécialistes':2,
                  'Téléconsultation':3,
                  'Majoration':4}
 
@@ -128,6 +130,7 @@ def _base_table_styles():
         {"selector": "td",
          "props": [("font-size", f"{_T_FONT}px"),
                    ("color", _T_TEXT),
+                   ("font-weight","bold"),
                    ("padding", "6px 10px"),
                    ("text-align", "right"),
                    ("border-bottom", f"1px solid {_T_BORDER}"),
@@ -157,11 +160,13 @@ def _style_last_row_total(styler, n_rows):
              "props": [("background-color", _T_TOTAL_BG),
                        ("color", _T_TOTAL_FG),
                        ("font-weight", "bold"),
+                       ("font-size","16px"),
                        ("border-top", "2px solid #4A90D9")]},
             # Forcer aussi sur td pour écraser les alternances de lignes
             {"selector": "td",
              "props": [("background-color", _T_TOTAL_BG),
                        ("color", _T_TOTAL_FG),
+                       ("font-weight","bold"),
                        ("font-weight", "bold")]},
         ]}, axis=1, overwrite=False)
     return styler
@@ -195,9 +200,9 @@ def _color_pct(val):
         return ""
     try:
         v = float(val.replace("%", "").replace("+", "").replace(",", ".").replace(" ", ""))
-        if v > 0.5:
+        if v > 0.001:
             return f"background-color: {_T_POS_BG}; color: {_T_POS}; font-weight: bold"
-        elif v < -0.5:
+        elif v < -0.001:
             return f"background-color: {_T_NEG_BG}; color: {_T_NEG}; font-weight: bold"
     except Exception:
         pass
@@ -249,18 +254,56 @@ def TableConso(df,Emplacement_stockage,ID,backend):
     tableAvantMiseEnforme=table.copy() 
 
     table[['Nombre consommants','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge']]=table[['Nombre consommants','Frais réels','Remboursement sécurité sociale','Remboursement complémentaire','Reste à charge']].map(formatM)
-    table=table.rename(columns={'Famille acte':str(annee)})    
+    table=table.rename(columns={'Famille acte': f"Survenance {annee}"})   
 
     n_rows = len(table.index)
     table = (table.style
              .format({'Taux de couverture': "{:.0%}"})
              .set_table_styles(_base_table_styles(), overwrite=True)
              .hide(axis='index'))
-    table = _style_label_col(table, str(annee))
-    table = _style_last_row_total(table, n_rows)
+    table = _style_label_col(table, f"Survenance {annee}")
     table = table.set_properties(**{'width': '100px', 'text-align': 'right'})
     annee = int(df['annee_soins'].unique())
-    st.dataframe(table, use_container_width=True)
+    st.markdown(table.to_html(), unsafe_allow_html=True)
+
+    if 'Remboursement complémentaire' in [c for c in table.columns]:
+        table = table.set_table_styles(
+            {'Remboursement complémentaire': [
+                {"selector": "th",
+                 "props": [("background-color", _T_SUBHD2_BG),
+                           ("color", "#FFFFFF"),
+                           ("text-align", "center"),
+                           ("font-size", "15px")]},
+                {"selector": "td",
+                 "props": [("background-color", "#FFFFFF"),
+                           ("color", "#2B3885"),
+                           ("text-align", "right"),
+                           ("font-size", "15px")]}
+            ]}, overwrite=False)
+
+    # Colonne Taux de couverture : accent violet discret
+    if 'Taux de couverture' in [c for c in table.columns]:
+        table = table.set_table_styles(
+            {'Taux de couverture': [
+                {"selector": "th",
+                 "props": [("background-color", "#4A3570"),
+                           ("color", "#FFFFFF"),
+                           ("text-align", "center"),
+                           ("font-size", "15px")]},
+                {"selector": "td",
+                 "props": [("background-color", "#FFFFFF"),
+                           ("color", "#4A3570"),
+                           ("text-align", "center"),
+                           ("font-size", "15px")]}
+            ]}, overwrite=False)
+
+    
+    table = _style_last_row_total(table, n_rows)
+
+    table = table.set_properties(
+        subset=pd.IndexSlice[n_rows-1, :],
+        **{"font-size": "16px"}
+    )
     
     try:
         dfi.export(table, Emplacement_stockage+"/"+str(annee)+'_tableConso.jpg',dpi=200,table_conversion=backend)
@@ -296,6 +339,39 @@ def table_N_vs_NMoins1(table1,table2,annee,Emplacement_stockage,backend):
              .set_table_styles(_base_table_styles(), overwrite=True)
              .hide(axis='index'))
     table = _style_label_col(table, col_label)
+
+
+    if 'Remboursement complémentaire' in [c for c in table.columns]:
+        table = table.set_table_styles(
+            {'Remboursement complémentaire': [
+                {"selector": "th",
+                 "props": [("background-color", _T_SUBHD2_BG),
+                           ("color", "#FFFFFF"),
+                           ("text-align", "center"),
+                           ("font-size", "15px")]},
+                {"selector": "td",
+                 "props": [("background-color", "#FFFFFF"),
+                           ("color", "#2B3885"),
+                           ("text-align", "right"),
+                           ("font-size", "15px")]}
+            ]}, overwrite=False)
+
+    # Colonne Taux de couverture : accent violet discret
+    if 'Taux de couverture' in [c for c in table.columns]:
+        table = table.set_table_styles(
+            {'Taux de couverture': [
+                {"selector": "th",
+                 "props": [("background-color", "#4A3570"),
+                           ("color", "#FFFFFF"),
+                           ("text-align", "center"),
+                           ("font-size", "15px")]},
+                {"selector": "td",
+                 "props": [("background-color", "#FFFFFF"),
+                           ("color", "#4A3570"),
+                           ("text-align", "center"),
+                           ("font-size", "15px")]}
+            ]}, overwrite=False)
+
     # Coloration conditionnelle : vert/rouge sur toutes les colonnes de variation
     table = table.map(_color_pct, subset=num_cols)
     table = _style_last_row_total(table, n_rows)
@@ -321,7 +397,7 @@ def format_table_Sousfamille(table, annee):
     table = table.hide(axis='index')
 
     # Colonne libellé (année) : fond bleu, texte blanc, aligné à gauche
-    table = _style_label_col(table, str(annee))
+    table = _style_label_col(table, f"Survenance {annee}")
 
     # Colonne Remboursement complémentaire : accent bleu foncé
     if 'Remboursement complémentaire' in [c for c in table.columns]:
@@ -331,12 +407,12 @@ def format_table_Sousfamille(table, annee):
                  "props": [("background-color", _T_SUBHD2_BG),
                            ("color", "#FFFFFF"),
                            ("text-align", "center"),
-                           ("font-size", "14px")]},
+                           ("font-size", "15px")]},
                 {"selector": "td",
                  "props": [("background-color", "#FFFFFF"),
                            ("color", "#2B3885"),
                            ("text-align", "right"),
-                           ("font-size", "14px")]}
+                           ("font-size", "15px")]}
             ]}, overwrite=False)
 
     # Colonne Taux de couverture : accent violet discret
@@ -347,12 +423,12 @@ def format_table_Sousfamille(table, annee):
                  "props": [("background-color", "#4A3570"),
                            ("color", "#FFFFFF"),
                            ("text-align", "center"),
-                           ("font-size", "14px")]},
+                           ("font-size", "15px")]},
                 {"selector": "td",
                  "props": [("background-color", "#FFFFFF"),
                            ("color", "#4A3570"),
                            ("text-align", "center"),
-                           ("font-size", "14px")]}
+                           ("font-size", "15px")]}
             ]}, overwrite=False)
 
     # Ligne Total (dernière)
@@ -382,7 +458,7 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
 
 
     table=pd.pivot_table(dfassureur, values=['frais_reels','RàC','RC','rbt_ss','nb_acte'], index=[mesure], aggfunc='sum').reset_index()
-    table['Remboursement complémentaire moyen']=round(table['RC']/table['nb_acte'],2)
+    table['Remboursement complémentaire moyen (par acte)']=round(table['RC']/table['nb_acte'],2)
     table=table[table[mesure]!='Divers']
     table.index=table[mesure]
 
@@ -418,17 +494,17 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
     table['RàC']=table['frais_reels']-table['RC']-table['rbt_ss']
     table.rename(columns={ID: "Nombre consommants",'frais_reels':'Frais réels','RàC':'Reste à charge','rbt_ss':'Remboursement sécurité sociale','RC':'Remboursement complémentaire','nb_acte':'Nombre actes'},inplace=True)
 
-    TT = pd.DataFrame([[dfassureur[ID].nunique(),dfassureur['frais_reels'].sum(),dfassureur['rbt_ss'].sum(),dfassureur['RC'].sum(),dfassureur['RàC'].sum(),dfassureur['nb_acte'].sum(),(dfassureur['RC'].sum()/dfassureur['nb_acte'].sum())]], columns=['Nombre consommants','frais_reels','Remboursement sécurité sociale','Remboursement complémentaire','RàC','Nombre actes','Remboursement complémentaire moyen'], index=['Total']).reset_index().rename(columns={'index':mesure,'frais_reels':'Frais réels','RàC':'Reste à charge'})
+    TT = pd.DataFrame([[dfassureur[ID].nunique(),dfassureur['frais_reels'].sum(),dfassureur['rbt_ss'].sum(),dfassureur['RC'].sum(),dfassureur['RàC'].sum(),dfassureur['nb_acte'].sum(),(dfassureur['RC'].sum()/dfassureur['nb_acte'].sum())]], columns=['Nombre consommants','frais_reels','Remboursement sécurité sociale','Remboursement complémentaire','RàC','Nombre actes','Remboursement complémentaire moyen (par acte)'], index=['Total']).reset_index().rename(columns={'index':mesure,'frais_reels':'Frais réels','RàC':'Reste à charge'})
 
-    TT=TT[[mesure,'Nombre actes','Frais réels','Remboursement complémentaire','Remboursement sécurité sociale','Reste à charge','Nombre consommants','Remboursement complémentaire moyen']]
+    TT=TT[[mesure,'Nombre actes','Frais réels','Remboursement complémentaire','Remboursement sécurité sociale','Reste à charge','Nombre consommants','Remboursement complémentaire moyen (par acte)']]
     table=pd.concat([table,TT],axis=0)
     table['Taux de couverture']=(table['Remboursement complémentaire']+table['Remboursement sécurité sociale'])/table['Frais réels']
-    table = table[[mesure,'Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge','Taux de couverture','Remboursement complémentaire moyen']].reset_index(drop=True).fillna(0) # 'Frais réels','Remboursement sécurité sociale'
+    table = table[[mesure,'Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge','Taux de couverture','Remboursement complémentaire moyen (par acte)']].reset_index(drop=True).fillna(0) # 'Frais réels','Remboursement sécurité sociale'
     tableAvantMiseEnforme=table.copy()
 
     table[['Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge']]=table[['Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge']].map(formatM) # 'Frais réels','Remboursement sécurité sociale'
-    table=table.rename(columns={mesure:str(annee)})   
-    table['Remboursement complémentaire moyen']=table['Remboursement complémentaire moyen'].apply(lambda x: '{:.2f} €'.format(x))
+    table = table.rename(columns={mesure: f"Survenance {annee}"})   
+    table['Remboursement complémentaire moyen (par acte)']=table['Remboursement complémentaire moyen (par acte)'].apply(lambda x: '{:.2f} €'.format(x))
     table=table.style.format({'Taux de couverture': "{:.1%}"})
 
     table=format_table_Sousfamille(table,annee)
@@ -467,12 +543,42 @@ def comparaison_sf_n_n_1(tn,tn_1,Emplacement_stockage,annee,mesure,Variable_bouc
     table = (table.style
              .set_table_styles(_base_table_styles(), overwrite=True)
              .hide(axis='index'))
+    if 'Remboursement complémentaire' in [c for c in table.columns]:
+        table = table.set_table_styles(
+            {'Remboursement complémentaire': [
+                {"selector": "th",
+                 "props": [("background-color", _T_SUBHD2_BG),
+                           ("color", "#FFFFFF"),
+                           ("text-align", "center"),
+                           ("font-size", "15px")]},
+                {"selector": "td",
+                 "props": [("background-color", "#FFFFFF"),
+                           ("color", "#2B3885"),
+                           ("text-align", "right"),
+                           ("font-size", "15px")]}
+            ]}, overwrite=False)
+
+    # Colonne Taux de couverture : accent violet discret
+    if 'Taux de couverture' in [c for c in table.columns]:
+        table = table.set_table_styles(
+            {'Taux de couverture': [
+                {"selector": "th",
+                 "props": [("background-color", "#4A3570"),
+                           ("color", "#FFFFFF"),
+                           ("text-align", "center"),
+                           ("font-size", "15px")]},
+                {"selector": "td",
+                 "props": [("background-color", "#FFFFFF"),
+                           ("color", "#4A3570"),
+                           ("text-align", "center"),
+                           ("font-size", "15px")]}
+            ]}, overwrite=False)
+
     table = _style_label_col(table, col_label)
     table = table.map(_color_pct, subset=num_cols)
     table = _style_last_row_total(table, len(table.index))
     table = table.set_properties(**{'width': '100px', 'text-align': 'right'})
-
-    
+     
 
     st.markdown(table.to_html(), unsafe_allow_html=True)
     
@@ -933,3 +1039,108 @@ def table_100_sante(df,Emplacement_stockage,backend):
 
 
 
+def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotlib"):
+
+    if not isinstance(cat_assure, list):
+        cat_assure = [cat_assure]
+
+    df = d.copy()
+
+    table = pd.pivot_table(
+        df, values='RC', index='cat_assure',
+        columns='annee_soins', aggfunc='sum'
+    )
+
+    rc_porta  = table.loc[cat_assure].sum(axis=0)
+    rc_total  = table.sum()
+    prop_porta = rc_porta / rc_total
+    years     = rc_porta.index.astype(int)
+
+    label_cat = " - ".join(cat_assure) if len(cat_assure) > 1 else cat_assure[0]
+
+    # ── Layout ───────────────────────────────────────────────────────────────
+    from fonctions.charts import (
+        _make_fig, _add_main_ax, _strip_title,
+        _finalize, _apply_ax_theme, _kpi_row,
+        BG, BG_AX, HEX, STRIP_DARK, C_GRID, C_ANNOT
+    )
+    from matplotlib.ticker import FuncFormatter, EngFormatter
+
+    def _fmt_euro(x, _=None):
+        if abs(x) >= 1_000_000: return f"{x/1_000_000:.1f} M€"
+        if abs(x) >= 1_000:     return f"{x/1_000:.0f} k€"
+        return f"{x:.0f} €"
+
+    fig     = _make_fig(13, 6)
+    title_h = _strip_title(fig,
+        f"Montant total par survenance  ·  Part dans le remboursement global")
+
+    kpi_h   = 0.12
+    bottom  = kpi_h + 0.01
+    ax1     = _add_main_ax(fig, [0.06, bottom, 0.88, 1 - title_h - 0.03 - bottom])
+
+    # ── Barres RC ─────────────────────────────────────────────────────────────
+    x     = np.arange(len(years))
+    bars  = ax1.bar(x, rc_porta.values, color=HEX[2], width=0.5,
+                    edgecolor=BG, linewidth=0.8, alpha=0.90, zorder=3)
+
+    # Légère surbrillance
+    
+
+    _apply_ax_theme(ax1)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(years, fontsize=11)
+    ax1.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
+    ax1.set_axisbelow(True)
+    ax1.tick_params(axis="x", length=0.0)
+
+    # Annotations montants sur barres
+    for bar, val in zip(bars, rc_porta.values):
+        ax1.text(bar.get_x() + bar.get_width()/2,
+                 bar.get_height() * 1.012,
+                 _fmt_euro(val),
+                 ha="center", va="bottom",
+                 fontsize=18, fontweight="bold", color=HEX[2])
+
+    # ── Courbe % (axe droit) ──────────────────────────────────────────────────
+    ax2 = ax1.twinx()
+    ax2.plot(x, prop_porta.values * 100,
+             color=HEX[8], linewidth=2.5, marker="o", markersize=15,
+             zorder=5, markerfacecolor="white",
+             markeredgewidth=2, markeredgecolor=HEX[8])
+    ax2.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.1f} %"))
+    ax2.tick_params(axis="y", labelsize=15, colors=HEX[8], length=0)
+    for sp in ax2.spines.values(): sp.set_visible(False)
+    ax2.set_ylim(bottom=0,
+                 top=max(prop_porta.values) * 100 * 1.35)
+    ax2.grid(False)
+
+    # Annotations % au-dessus des points
+    for xi, pct in zip(x, prop_porta.values):
+        ax2.annotate(
+            f"{pct*100:.1f} %",
+            xy=(xi, pct * 100),
+            xytext=(0, 10), textcoords="offset points",
+            ha="center", fontsize=17, fontweight="bold",
+            color=HEX[8],
+            bbox=dict(boxstyle="round,pad=0.25",
+                      facecolor="white", edgecolor="none", alpha=0)
+        )
+
+    # ── Légende ───────────────────────────────────────────────────────────────
+    import matplotlib.patches as mpatches
+    import matplotlib.lines as mlines
+    patch = mpatches.Patch(color=HEX[1], label=f"RC")
+    line  = mlines.Line2D([], [], color=HEX[7], marker="o",
+                          markersize=8, markerfacecolor="white",
+                          markeredgewidth=1.5, label="Part dans le total")
+    ax1.legend(handles=[patch, line],
+               loc="lower center", bbox_to_anchor=(0.5, -0.18),
+               ncol=2, fontsize=10.5, frameon=False)
+
+    # ── Sauvegarde ────────────────────────────────────────────────────────────
+    title_safe = (label_cat.replace(' ', '_')
+                            .replace(',', '').replace(':', '')
+                            .replace('-', '_'))
+    filepath = f"{Emplacement_stockage}/RC_proportion_{title_safe}.jpg"
+    _finalize(fig, filepath, 150)

@@ -5,6 +5,7 @@ import streamlit as st
 
 from fonctions import workOnData
 from fonctions import charts
+from fonctions import build_conso_tables
 
 
 choix_annee=[2016,2017,2018,2019,2020,2021, 2022, 2023,2024,2025]
@@ -31,7 +32,8 @@ def Analyse_generale():
 'Soins courants',
 'Pharmacie',
 'Dentaire',
-'Optique'],
+'Optique',
+'Divers'],
 )
 
     if st.button('Cliquez ici pour exécuter'):

@@ -14,6 +14,7 @@ from matplotlib.patches import FancyBboxPatch
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import textwrap as _tw
 import circlify
 import streamlit as st
 from adjustText import adjust_text
@@ -40,7 +41,7 @@ STRIP_LIGHT= "#EEF1F9"
 C_TITLE    = "#FFFFFF"
 C_SUBTITLE = "#3A4A72"
 C_ANNOT    = "#2B3885"
-C_GRID     = "#FFFFFF"
+C_GRID     = "#EEF1F9"
 C_ZERO     = "#A0AAC0"
 C_KPIBG    = "#FFFFFF"
 C_KPIBORDER= "#2C67AF"
@@ -54,9 +55,10 @@ mpl.rcParams.update({
     "axes.spines.top":False,"axes.spines.right":False,
     "axes.spines.left":False,"axes.spines.bottom":False,
     "axes.grid":True,"grid.color":C_GRID,
-    "grid.linewidth":0.7,"grid.linestyle":"--",
+    "grid.linewidth":0.77,"grid.linestyle":"--",
     "axes.facecolor":BG_AX,"figure.facecolor":BG,
     "xtick.color":"#666E88","ytick.color":"#666E88",
+    "legend.labelcolor": "#181818","legend.fontsize":11,
     "xtick.labelsize":11,"ytick.labelsize":11,
 })
 MOIS=['Janv','Fév','Mars','Avr','Mai','Juin',
@@ -64,14 +66,20 @@ MOIS=['Janv','Fév','Mars','Avr','Mai','Juin',
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
-def _fmt_euro(x,_=None):
-    if abs(x)>=1_000_000: return f"{x/1_000_000:.1f} M€"
-    if abs(x)>=1_000:     return f"{x/1_000:.0f} k€"
+def _fmt_euro(x, _=None):
+    if abs(x) >= 1_000_000:
+        v = x / 1_000_000
+        return f"{v:.0f} M€" if v == int(v) else f"{v:.1f} M€"
+    if abs(x) >= 1_000:
+        v = x / 1_000
+        return f"{v:.0f} k€" if v == int(v) else f"{v:.1f} k€"
     return f"{x:.0f} €"
 
-def _fmt_k(x,_=None):
-    return f"{x/1_000:.1f} k" if abs(x)>=1_000 else f"{x:.0f}"
-
+def _fmt_k(x, _=None):
+    if abs(x) >= 1_000:
+        v = x / 1_000
+        return f"{v:.0f} k" if v == int(v) else f"{v:.1f} k"
+    return f"{x:.0f}"
 def _sign(v):
     return f"+{v:.1f} %" if v>=0 else f"{v:.1f} %"
 
@@ -81,30 +89,47 @@ def _color_sign(v):
 def _apply_ax_theme(ax):
     ax.set_facecolor(BG_AX)
     for sp in ax.spines.values(): sp.set_visible(False)
-    ax.grid(True,linestyle="--",linewidth=0.7,alpha=0.7,color=C_GRID)
+    ax.grid(True,linestyle="--",linewidth=0.7,alpha=1,color=C_GRID)
     ax.set_axisbelow(True)
     ax.tick_params(labelsize=10.5,colors="#666E88",length=0)
 
-def _strip_title(fig,title,subtitle=None,strip_h=0.055,sub_h=0.032):
-    fig.add_axes([0,1-strip_h,1,strip_h],zorder=10)
-    ax_t=fig.axes[-1]
-    ax_t.set_facecolor(STRIP_DARK)
-    ax_t.set_xlim(0,1);ax_t.set_ylim(0,1)
+def _strip_title(fig, title, subtitle=None, strip_h=0.055, sub_h=0.032, size=13):
+
+    
+ 
+    fig.add_axes([0, 1-strip_h, 1, strip_h], zorder=10)
+    ax_t = fig.axes[-1]
+    ax_t.set_facecolor(BG)
+    ax_t.set_xlim(0, 1); ax_t.set_ylim(0, 1)
     for sp in ax_t.spines.values(): sp.set_visible(False)
-    ax_t.set_xticks([]);ax_t.set_yticks([])
-    ax_t.text(0.018,0.5,title,color=C_TITLE,fontsize=13,
-              fontweight="bold",va="center",transform=ax_t.transAxes)
+    ax_t.set_xticks([]); ax_t.set_yticks([])
+    ax_t.text(0.018, 0.5, title, color=STRIP_DARK, fontsize=size+2,
+              fontweight="bold", va="center", transform=ax_t.transAxes)
+ 
     if subtitle:
-        top_sub=1-strip_h
-        fig.add_axes([0,top_sub-sub_h,1,sub_h],zorder=9)
-        ax_s=fig.axes[-1]
-        ax_s.set_facecolor(STRIP_LIGHT)
-        ax_s.set_xlim(0,1);ax_s.set_ylim(0,1)
+        n_chars = len(subtitle)
+        if n_chars < 80:
+            fs_sub = size
+        elif n_chars < 120:
+            fs_sub = size - 1
+        else:
+            fs_sub = size - 2
+ 
+        if n_chars > 110:
+            subtitle = "\n".join(_tw.wrap(subtitle, width=110))
+            sub_h = 0.065
+ 
+        top_sub = 1 - strip_h
+        fig.add_axes([0, top_sub-sub_h, 1, sub_h], zorder=9)
+        ax_s = fig.axes[-1]
+        ax_s.set_facecolor("none")   # transparent
+        ax_s.patch.set_alpha(0)
+        ax_s.set_xlim(0, 1); ax_s.set_ylim(0, 1)
         for sp in ax_s.spines.values(): sp.set_visible(False)
-        ax_s.set_xticks([]);ax_s.set_yticks([])
-        ax_s.text(0.018,0.5,subtitle,color=C_SUBTITLE,fontsize=10,
-                  va="center",transform=ax_s.transAxes)
-        return strip_h+sub_h
+        ax_s.set_xticks([]); ax_s.set_yticks([])
+        ax_s.text(0.018, 0.5, subtitle, color=C_SUBTITLE, fontsize=fs_sub,
+                  va="center", transform=ax_s.transAxes, linespacing=1.4)
+        return strip_h + sub_h
     return strip_h
 
 def _kpi_row(fig,kpis,bottom=0.0,height=0.13):
@@ -118,7 +143,7 @@ def _kpi_row(fig,kpis,bottom=0.0,height=0.13):
         ax.set_xticks([]);ax.set_yticks([])
         ax.text(0.08,0.72,lbl,color=C_SUBTITLE,fontsize=8.5,
                 va="center",transform=ax.transAxes)
-        ax.text(0.08,0.38,val,color=STRIP_DARK,fontsize=13,
+        ax.text(0.08,0.28,val,color=STRIP_DARK,fontsize=13,
                 fontweight="bold",va="center",transform=ax.transAxes)
         if delta is not None:
             col=_color_sign(float(str(delta).replace("+","").replace(" %","")))
@@ -276,11 +301,20 @@ def PlotVentilationCouts(df_data,annee,qualitéGraphique,Emplacement_stockage,ID
          .apply(lambda x:x*100/x.sum(),axis=1)
          .rename(columns={"rbt_ss":"Sécurité Sociale",
                            "RC":"Remboursement Complémentaire","RàC":"Reste à Charge"}))
-    fig=_make_fig(14,8)
-    title_h=_strip_title(fig,"Répartition des dépenses de santé  ·  Coût moyen par famille",
-                         subtitle=f"Survenance {annee}")
+    
+    date_obs = ""
+    if "date_paiement" in df_data.columns:
+        d = pd.to_datetime(df_data["date_paiement"], errors="coerce").max()
+        if pd.notna(d):
+            date_obs = f"  ·  Observée au {d.strftime('%d/%m/%Y')}"
+ 
+    fig = _make_fig(14, 8)
+    title_h = _strip_title(
+        fig,
+        f"Survenance {annee}{date_obs}"
+    )
     kpi_h=0.13   # hauteur KPI boxes
-    xlabel_h=0.10  # espace réservé pour les labels axe X (rotation 20°, textes longs)
+    xlabel_h=0.02  # espace réservé pour les labels axe X (rotation 20°, textes longs)
     bottom=kpi_h+xlabel_h
     ax=_add_main_ax(fig,[0.06,bottom,0.90,1-title_h-0.02-bottom])
     stk.plot(kind="bar",stacked=True,ax=ax,
@@ -288,9 +322,17 @@ def PlotVentilationCouts(df_data,annee,qualitéGraphique,Emplacement_stockage,ID
              linewidth=0.8,zorder=3,width=0.55)
     _apply_ax_theme(ax)
     ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}%"))
-    ax.set_xticklabels(stk.index,rotation=20,ha="right",fontsize=11.5)
+
+    for i, label in enumerate(ax.get_xticklabels()):
+        if i % 2 == 1:
+            label.set_y(label.get_position()[1] - 0.05)
+
+    
+    ax.set_xticklabels(stk.index,rotation=00,ha="center",fontsize=15.5)
     ax.tick_params(axis='x',pad=4)
     ax.set(xlabel="",ylabel="")
+    ax.tick_params(axis='y', colors="#181818")
+    ax.tick_params(axis='x', colors="#181818")
     idx_list=list(t.index);col_names=["rbt_ss","RC","RàC"];n_idx=len(idx_list)
     for pi,p in enumerate(ax.patches):
         col_i=pi//n_idx;row_i=pi%n_idx
@@ -299,15 +341,15 @@ def PlotVentilationCouts(df_data,annee,qualitéGraphique,Emplacement_stockage,ID
         if val>0 and pct>=6:
             ax.text(p.get_x()+p.get_width()/2,p.get_y()+p.get_height()/2,
                     f"{formatM(val)} €",ha="center",va="center",
-                    color="white",fontweight="bold",fontsize=12)
+                    color="white",fontweight="bold",fontsize=16.5)
         if col_i==2 and val>0:
             ax.annotate(f"{formatM(t['total'].iloc[row_i])} €",
                 xy=(p.get_x()+p.get_width()/2,101),
                 xytext=(0,5),textcoords="offset points",
-                ha="center",color="white",fontsize=9.5,fontweight="bold",
+                ha="center",color="white",fontsize=16.5,fontweight="bold",
                 bbox=dict(boxstyle="round,pad=0.3",fc=STRIP_DARK,ec="none",alpha=0.88))
     ax.legend(loc="lower center",bbox_to_anchor=(0.5,-0.22),ncol=3,
-              fontsize=13,frameon=False)
+              fontsize=15,frameon=False)
     title=f"Ventilation coûts {annee}"
     _finalize(fig,f"{Emplacement_stockage}/{title}.jpg",qualitéGraphique)
 
@@ -321,14 +363,17 @@ def distributionFamilleActes(df,annee,Emplacement_stockage,qualitéGraphique):
                        values="RC",aggfunc="sum").reset_index())
     pv["taux"]=pv["RC"]/pv["RC"].sum()
     rcs=pv.sort_values("RC",ascending=False)
-    circles=circlify.circlify(rcs["RC"].tolist(),show_enclosure=False,
+
+    rcs_plot = rcs[rcs["famille_acte_aops"] != "Divers"]
+    circles=circlify.circlify(rcs_plot["RC"].tolist(),show_enclosure=False,
                                target_enclosure=circlify.Circle(x=0,y=0))
     circles.reverse()
     fig,ax=plt.subplots(figsize=(9,9),facecolor=STRIP_DARK)
     ax.set_facecolor(STRIP_DARK);ax.axis("off")
     lim=max(max(abs(c.x)+c.r,abs(c.y)+c.r) for c in circles)
     ax.set_xlim(-lim,lim);ax.set_ylim(-lim,lim)
-    for circle,label,rc,color in zip(circles,rcs["famille_acte_aops"],rcs["RC"],HEX):
+
+    for circle,label,rc,color in zip(circles,rcs["famille_acte_aops"],rcs["RC"],[HEX[0]]+HEX[2:5]+[HEX[6]] +[HEX[8]]+[HEX[7]]):
         x,y,r=circle
         ax.add_patch(plt.Circle((x,y),r*1.06,alpha=0.15,color="white",zorder=1))
         ax.add_patch(plt.Circle((x,y),r,color=color,alpha=0.95,zorder=2,edgecolor="black",linewidth=1.2))
@@ -343,11 +388,27 @@ def distributionFamilleActes(df,annee,Emplacement_stockage,qualitéGraphique):
                  fontsize=15,fontweight="bold",color="white",pad=14)
     fig.patch.set_facecolor(STRIP_DARK)
     title=f"Distribution actes {annee}"
+    plt.title(title,color=STRIP_DARK, weight='bold',fontsize=13 )
     _finalize(fig,f"{Emplacement_stockage}/_{title}_.jpg",qualitéGraphique)
 
 # ── 4. ÉVOLUTION CONSO MOYENNE ───────────────────────────────────────────────
 
-def Evo_Cons_Moyenne(df, qualitéGraphique, Emplacement_stockage, ID):
+def Evo_Cons_Moyenne(df, cat_assure, qualitéGraphique, Emplacement_stockage, ID):
+
+
+
+    df = df.copy()
+
+    if not isinstance(cat_assure, list):
+        cat_assure = [cat_assure]
+
+    df = df[df["cat_assure"].isin(cat_assure)]
+
+    
+
+
+
+
     df = df.copy()
     df["annee_soins"] = df["annee_soins"].fillna(0).astype(int)
     nb_surv = df["annee_soins"].nunique()
@@ -389,24 +450,10 @@ def Evo_Cons_Moyenne(df, qualitéGraphique, Emplacement_stockage, ID):
         table = table.drop(index="Divers")
 
     # ── surv_all et date_max — après n est connu ──────────────────────────────
-    surv_all = sorted(df["annee_soins"].unique())
-    title    = f"Évolution conso moyenne {surv_all[0]}-{surv_all[-1]}"
-
-    date_max_str = ""
-    if "date_paiement" in df.columns:
-        df["date_paiement"] = pd.to_datetime(df["date_paiement"], errors="coerce")
-        dates = df.groupby("annee_soins")["date_paiement"].max()
-        dates_filtrees = dates[dates.index.isin(surv_all[-n:])]
-        parties = [f"{int(a)} arrétée au {d.strftime('%d/%m/%Y')}"
-                   for a, d in dates_filtrees.items() if pd.notna(d)]
-        date_max_str = "  ·  " + "  |  ".join(parties) if parties else ""
 
     fig     = _make_fig(16, 8)
-    title_h = _strip_title(fig,
-                "Évolution de la consommation moyenne par consommant",
-                subtitle=f"Survenances {surv_all[0]} – {surv_all[-1]}  ·  Variation en %{date_max_str}")
     comm_h  = 0.06
-    ax      = _add_main_ax(fig, [0.06, comm_h+0.01, 0.90, 1-title_h-0.04-comm_h])
+    ax      = _add_main_ax(fig, [0.06, comm_h+0.01, 0.90, 1-0.04-comm_h])
 
     # ── CAS >= 3 SURVENANCES : ancienne structure, couleurs palette ──────────
     if nb_surv >= 3:
@@ -417,32 +464,39 @@ def Evo_Cons_Moyenne(df, qualitéGraphique, Emplacement_stockage, ID):
         for ei, col in enumerate(evol_cols):
             off   = (ei - (n_evol-1)/2) * bar_w
             vals  = table[col].values
-            color = PALETTE[ei % len(PALETTE)]
+            palette = [HEX[i] for i in [0,1, 4]] + [c for i, c in enumerate(HEX) if i not in [0, 1, 4]]
+            color = palette[ei % len(palette)]
             ax.bar(x + off, vals, width=bar_w*0.92, color=color,
                    alpha=0.88, edgecolor=BG, linewidth=0.8, zorder=3)
             ymin_ax, ymax_ax = ax.get_ylim()
             pad = (ymax_ax - ymin_ax) * 0.2 if ymax_ax != ymin_ax else 1
             for xi, v in enumerate(vals):
+                
                 sign = "+" if v >= 0 else ""
                 ax.annotate(f"{sign}{v:.0f}%",
-                    xy=(x[xi] + off, v + (pad*0.25 if v >= 0 else -pad*0.35)),
+                    xy=(x[xi] + off, v + (pad*0.15 if v >= 0 else -pad*0.25)),
                     ha="center", va="bottom" if v >= 0 else "top",
-                    size=12, xytext=(0, 8), textcoords="offset points",
-                    rotation=0, color="#1A2440")
+                    size=14, xytext=(0, 8), textcoords="offset points",
+                    rotation=0, color=color)
 
         ax.axhline(0, color=C_ZERO, linewidth=1.2, zorder=2)
         ax.set_xticks(x)
-        ax.set_xticklabels(table.index, fontsize=14, rotation=0)
+        ax.set_xticklabels(table.index, fontsize=30, rotation=0, ha="center")
         ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}%"))
         _apply_ax_theme(ax)
+        for spine in plt.gca().spines.values():
+            spine.set_visible(False)
+        plt.grid(True, linestyle='--', alpha=0.3, color='grey')
         ymin_ax, ymax_ax = ax.get_ylim()
         pad = (ymax_ax - ymin_ax) * 0.2
         ax.set_ylim(ymin_ax - pad, ymax_ax + pad)
+        ax.tick_params(axis='y', colors="#181818")
+        ax.tick_params(axis='x', colors="#181818")
         ax.legend(
-            handles=[mpatches.Patch(color=PALETTE[i], label=col)
+            handles=[mpatches.Patch(color=palette[i], label=col)
                      for i, col in enumerate(evol_cols)],
             loc="lower center", bbox_to_anchor=(0.5, -0.18),
-            ncol=n_evol, fontsize=16, frameon=False)
+            ncol=n_evol, fontsize=12 ,frameon=False)
 
     # ── CAS 2 SURVENANCES : vert/rouge, sans cubes ───────────────────────────
     else:
@@ -464,13 +518,15 @@ def Evo_Cons_Moyenne(df, qualitéGraphique, Emplacement_stockage, ID):
 
         ax.axhline(0, color=C_ZERO, linewidth=1.2, zorder=2)
         ax.set_xticks(x)
-        ax.set_xticklabels(table.index, fontsize=12.5, rotation=0)
+        ax.set_xticklabels(table.index, rotation=0, ha="right", fontsize=15)
         ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}%"))
         _apply_ax_theme(ax)
+        ax.tick_params(axis='y', colors="#181818")
+        ax.tick_params(axis='x', colors="#181818")
         pad_pct = (ax.get_ylim()[1]-ax.get_ylim()[0]) * 0.15
         ax.set_ylim(ax.get_ylim()[0]-pad_pct, ax.get_ylim()[1]+pad_pct)
 
-    _finalize(fig, f"{Emplacement_stockage}/{title}.jpg", qualitéGraphique)
+    _finalize(fig, f"{Emplacement_stockage}/{"evo_cons"}{cat_assure}.jpg", qualitéGraphique)
 
 # ── 5. ÉVOLUTION NB CONSOMMATEURS ────────────────────────────────────────────
 
@@ -487,11 +543,10 @@ def EVO_Consommateurs(df,qualitéGraphique,Emplacement_stockage,ID):
                      df[df["annee_soins"]==a0][ID].nunique()-1)*100,2)
         delta_txt=_sign(delta)
     fig=_make_fig(14,7)
-    title_h=_strip_title(fig,"Évolution mensuelle du nombre de consommants",
-                         subtitle="Par survenance  ·  Bénéficiaires uniques actifs")
+
     kpi_h=0.13;xlabel_h=0.07;comm_h=0.06 if delta_txt else 0;bottom=kpi_h+comm_h+xlabel_h
-    ax=_add_main_ax(fig,[0.07,bottom+0.01,0.88,1-title_h-0.02-bottom])
-    for annee,col in zip(annees,HEX[::3][:len(annees)]):
+    ax=_add_main_ax(fig,[0.07,bottom+0.01,0.88,1-0.02-bottom])
+    for annee,col in zip(annees,[HEX[4]] + [HEX[1]] +[HEX[0]][:len(annees)]):
         sub=pivot[pivot["annee_soins"]==annee]
         ax.plot(sub["mois_soins"],sub[ID],color=col,linewidth=2.8,zorder=3,
                 marker="o",markersize=6,markerfacecolor="white",
@@ -502,14 +557,10 @@ def EVO_Consommateurs(df,qualitéGraphique,Emplacement_stockage,ID):
     ax.set_xticks(range(mois_min,mois_max+1))
     ax.set_xticklabels(MOIS[mois_min-1:mois_max],fontsize=10.5)
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_k))
+    ax.tick_params(axis='y', colors="#181818")
+    ax.tick_params(axis='x', colors="#181818")
     ax.set_ylabel("Consommants",fontsize=11)
-    ax.legend(title="Survenance",fontsize=11.5,title_fontsize=11.5,frameon=False,loc="best")
-    kpis=[]
-    for annee in sorted(annees)[-2:]:
-        nb=df[df["annee_soins"]==annee][ID].nunique()
-        kpis.append((f"Consommants {annee}",f"{nb:,}".replace(",", " "),None))
-    if delta_txt: kpis.append(("Évolution N/N-1",delta_txt,None))
-    _kpi_row(fig,kpis,bottom=comm_h,height=kpi_h)
+    ax.legend(title="Survenance",fontsize=11.5,title_fontsize=11.5,frameon=False,loc="center right")
     _finalize(fig,f"{Emplacement_stockage}/Évolution nb consommants.jpg",qualitéGraphique)
 
 # ── 6. ÉVOLUTION REMBOURSEMENT MOYEN ─────────────────────────────────────────
@@ -536,7 +587,7 @@ def EVO_Remboursement_moy(df,var,qualitéGraphique,Emplacement_stockage,ID):
                          subtitle="Par survenance  ·  Valeur moyenne mensuelle")
     kpi_h=0.13;xlabel_h=0.07;comm_h=0.06 if delta_txt else 0;bottom=kpi_h+comm_h+xlabel_h
     ax=_add_main_ax(fig,[0.07,bottom+0.01,0.88,1-title_h-0.03-bottom])
-    for annee,col in zip(annees,HEX[::3][:len(annees)]):
+    for annee,col in zip(annees,[HEX[4]] + [HEX[1]] +[HEX[0]][:len(annees)]):
         sub=t[t["annee_soins"]==annee]
         ax.plot(sub["mois_soins"],sub["Moy"],color=col,linewidth=2.8,zorder=3,
                 marker="o",markersize=6,markerfacecolor="white",
@@ -547,19 +598,23 @@ def EVO_Remboursement_moy(df,var,qualitéGraphique,Emplacement_stockage,ID):
     ax.set_xticks(range(mois_min,mois_max+1))
     ax.set_xticklabels(MOIS[mois_min-1:mois_max],fontsize=11.5)
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
-    ax.legend(title="Survenance",fontsize=11.5,title_fontsize=11.5,frameon=False,loc="best")
-    kpis=[]
-    for annee in sorted(annees)[-2:]:
-        m=df[df["annee_soins"]==annee][var].sum()/df[df["annee_soins"]==annee][ID].nunique()
-        kpis.append((f"Moyenne {annee}",f"{formatM(m)} €",None))
-    if delta_txt: kpis.append(("Évolution N/N-1",delta_txt,None))
-    _kpi_row(fig,kpis,bottom=comm_h,height=kpi_h)
+    ax.legend(title="Survenance",fontsize=11.5,title_fontsize=11.5,frameon=False,loc="upper right")
     title=f"Évolution {name} moyen"
     _finalize(fig,f"{Emplacement_stockage}/{title}.jpg",qualitéGraphique)
 
 # ── 7. RC PAR FAMILLE (barres horizontales) ───────────────────────────────────
 
-def Evo_RC(df,qualitéGraphique,Emplacement_stockage):
+def Evo_RC(df,cat_assure,qualitéGraphique,Emplacement_stockage):
+
+    df = df.copy()
+    
+    if not isinstance(cat_assure, list):
+        cat_assure = [cat_assure]
+
+    
+    df = df[df["cat_assure"].isin(cat_assure)]
+
+
     ordre=Famille_acte_sorted(df)
     if "Divers" in ordre: ordre.remove("Divers")
     df=df.copy();df["annee_soins"]=df["annee_soins"].fillna(0).astype(int)
@@ -569,14 +624,14 @@ def Evo_RC(df,qualitéGraphique,Emplacement_stockage):
     t=t[t["famille_acte_aops"]!="Divers"]
     annees=sorted(t["annee_soins"].unique());n_annees=len(annees)
     bar_h=0.65/n_annees
-    fig=_make_fig(14,max(7,len(ordre)*0.9+3))
-    title_h=_strip_title(fig,"Remboursement complémentaire par famille d'actes",
-                         subtitle=f"Survenances {annees[0]} – {annees[-1]}  ·  Poids %")
-    ax=_add_main_ax(fig,[0.24,0.08,0.68,1-title_h-0.06])
+    fig=_make_fig(20,max(9,len(ordre)*0.9+3))
+    ax=_add_main_ax(fig,[0.24,0.08,0.68,1-0.06])
     y_pos={fam:i for i,fam in enumerate(ordre[::-1])}
     offsets=np.linspace(-(n_annees-1)/2,(n_annees-1)/2,n_annees)*bar_h
+    palette = [HEX[i] for i in [0,1, 4]] + [c for i, c in enumerate(HEX) if i not in [0, 1, 4]]
+
     for j,annee in enumerate(annees):
-        sub=t[t["annee_soins"]==annee];col=HEX[j%len(HEX)]
+        sub=t[t["annee_soins"]==annee];col=palette[j%len(palette)]
         for _,row in sub.iterrows():
             fam=row["famille_acte_aops"]
             if fam not in y_pos: continue
@@ -585,22 +640,27 @@ def Evo_RC(df,qualitéGraphique,Emplacement_stockage):
                     edgecolor=BG,linewidth=0.8,zorder=3,
                     label=str(annee) if fam==ordre[0] else "")
             ax.text(row["RC"]*1.01,y,f"{row['pct']*100:.1f} %",
-                    va="center",fontsize=9.5,color=col,fontweight="bold")
+                    va="center",fontsize=12.5,color=col,fontweight="bold")
     _apply_ax_theme(ax)
     ax.set_yticks(list(y_pos.values()))
-    ax.set_yticklabels(list(y_pos.keys()),fontsize=11)
+    ax.set_yticklabels(list(y_pos.keys()),fontsize=15, color = "#181818")
     ax.xaxis.set_major_formatter(FuncFormatter(_fmt_euro))
-    ax.grid(axis="x");ax.grid(axis="y",alpha=0)
+    ax.set_xlim(0, t["RC"].max() * 1.2)
+    ax.tick_params(axis='x', colors="#181818")
+
+    for spine in plt.gca().spines.values():
+        spine.set_visible(False)
+    plt.grid(True, linestyle='--', alpha=0.3, color='grey')
     handles,labels=ax.get_legend_handles_labels()
     seen={}
-    for h,l in zip(handles,labels):
+    for h,l in zip(reversed(handles),reversed(labels)):
         if l not in seen: seen[l]=h
-    ax.legend(seen.values(),seen.keys(),loc="lower right",fontsize=10.5,frameon=False)
+    ax.legend(seen.values(),seen.keys(),loc="upper right",fontsize=11.5,frameon=False)
     if df["annee_soins"].nunique()==1:
         title=f"RC par famille {annees[0]}"
     else:
         title=f"RC par famille {annees[0]}-{annees[-1]}"
-    _finalize(fig,f"{Emplacement_stockage}/{title}.jpg",qualitéGraphique)
+    _finalize(fig,f"{Emplacement_stockage}/{title}{cat_assure}.jpg",qualitéGraphique)
 
 # ── 8. MONTANT MENSUEL ────────────────────────────────────────────────────────
 
@@ -619,11 +679,11 @@ def EVO_Montant(df,var,qualitéGraphique,Emplacement_stockage):
                      df[df["annee_soins"]==a0][var].sum()-1)*100,2)
         delta_txt=_sign(delta)
     fig=_make_fig(14,7)
-    title_h=_strip_title(fig,f"Évolution mensuelle du {name}",
-                         subtitle="Par survenance  ·  Montant cumulé mensuel")
+    title_h=_strip_title(fig,f"Évolution mensuelle du {name}")
+
     kpi_h=0.13;xlabel_h=0.07;comm_h=0.06 if delta_txt else 0;bottom=kpi_h+comm_h+xlabel_h
     ax=_add_main_ax(fig,[0.07,bottom+0.01,0.88,1-title_h-0.03-bottom])
-    for annee,col in zip(annees,HEX[::3][:len(annees)]):
+    for annee,col in zip(annees,[HEX[4]] + [HEX[1]] +[HEX[0]] [:len(annees)]):
         sub=monthly[monthly["annee_soins"]==annee]
         ax.plot(sub["mois_soins"],sub[var],color=col,linewidth=2.8,zorder=3,
                 marker="o",markersize=6,markerfacecolor="white",
@@ -634,15 +694,9 @@ def EVO_Montant(df,var,qualitéGraphique,Emplacement_stockage):
     ax.set_xticks(range(mois_min,mois_max+1))
     ax.set_xticklabels(MOIS[mois_min-1:mois_max],fontsize=10.5)
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
+    ax.tick_params(axis='y', colors="#181818",fontsize=15)
+    ax.tick_params(axis='x', colors="#181818")
     ax.legend(title="Survenance",fontsize=10.5,title_fontsize=10.5,frameon=False,loc="best")
-    kpis=[]
-    for annee in sorted(annees)[-2:]:
-        tot=df[df["annee_soins"]==annee][var].sum()
-        kpis.append((f"Total {annee}",f"{formatM(tot)} €",None))
-    if delta_txt: kpis.append(("Évolution N/N-1",delta_txt,delta))
-    _kpi_row(fig,kpis,bottom=comm_h,height=kpi_h)
-    if delta_txt:
-        a1,a0=sorted(annees)[-1],sorted(annees)[-2]
     title=f"Évolution mensuelle {name}"
     _finalize(fig,f"{Emplacement_stockage}/{title}.jpg",qualitéGraphique)
 
@@ -656,10 +710,9 @@ def Panier_plot(d,ID,PanierVar,titre,qualitéGraphique,Emplacement_stockage):
        .reset_index().rename(columns={"annee_soins":"Année"}))
     t["RC moyen"]=(t["RC"]/t["nb_acte"]).round(2)
     pal=HEX[::3][:t[PanierVar].nunique()]
-    fig=_make_fig(12,7)
-    title_h=_strip_title(fig,f"100 % Santé  ·  {titre}",
-                         subtitle="Positionnement par panier  ·  Taille = montant RC total")
-    ax=_add_main_ax(fig,[0.09,0.06,0.86,1-title_h-0.04])
+    fig=_make_fig(8,4)
+    title_h=_strip_title(fig,f"100 % Santé  ·  {titre}",size = 7, sub_h = 0.090)
+    ax=_add_main_ax(fig,[0.09,0.06,0.86,1-title_h-0.12])
     base_fs=fig.get_size_inches()[1]*2.0
     sns.scatterplot(data=t,x="RC moyen",y="nb_acte",hue=PanierVar,palette=pal,
                     size="RC",sizes=(600,7000),legend=False,ax=ax,alpha=0.82,
@@ -667,18 +720,20 @@ def Panier_plot(d,ID,PanierVar,titre,qualitéGraphique,Emplacement_stockage):
     _apply_ax_theme(ax)
     ax.xaxis.set_major_formatter(FuncFormatter(_fmt_euro))
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_k))
-    ax.set_xlabel("Remboursement complémentaire moyen / acte",fontsize=11)
+    ax.set_xlabel("Remboursement complémentaire moyen / acte",fontsize=12)
     ax.set_ylabel("Nombre d'actes",fontsize=11)
     x_min,x_max=ax.get_xlim();y_min,y_max=ax.get_ylim()
     ax.set_xlim(x_min-(x_max-x_min)*0.25,x_max+(x_max-x_min)*0.25)
     ax.set_ylim(y_min-(y_max-y_min)*0.25,y_max+(y_max-y_min)*0.25)
+    ax.tick_params(axis='y', colors="#181818")
+    ax.tick_params(axis='x', colors="#181818")
     lfs=base_fs*max(0.65,min(1.0,7/len(t)))
     texts=[]
     for _,row in t.iterrows():
         txt=ax.text(row["RC moyen"],row["nb_acte"],
                     f"{row['Année']}\n{row[PanierVar]}\n{formatM(row['RC'])} €",
                     ha="center",va="center",fontsize=lfs,fontweight="bold",zorder=5,
-                    bbox=dict(boxstyle="round,pad=0.28",fc="white",
+                    bbox=dict(boxstyle="round,pad=0.50",fc="white",
                               ec=HEX[1],alpha=0.85,linewidth=0.9))
         texts.append(txt)
     fig.canvas.draw()
@@ -713,29 +768,33 @@ def Panier_plot_ventilation(d,ID,PanierVar,titre,qualitéGraphique,Emplacement_s
                                categories=ordre,ordered=True),
                 piv.index.get_level_values("annee_soins")],names=piv.index.names)
             piv.sort_index(inplace=True)
-    fig=_make_fig(12,6)
-    title_h=_strip_title(fig,"Taux d'utilisation par panier et sous-famille",
-                         subtitle="Répartition des montants RC  ·  Valeurs en %")
-    ax=_add_main_ax(fig,[0.06,0.14,0.90,1-title_h-0.04])
-    piv_t.plot.bar(stacked=True,ax=ax,color=HEX[:len(piv_t.columns)],
+    fig=_make_fig(11,4)
+    title_h=_strip_title(fig,"Taux d'utilisation par panier et sous-famille", size=8,sub_h=0.090)
+
+    
+    ax=_add_main_ax(fig,[0.06,0.14,0.90,1-title_h-0.12])
+    piv_t.plot.bar(stacked=True,ax=ax,color=HEX[3:3+len(piv_t.columns)-1]+[HEX[0]] ,
                    edgecolor=BG,linewidth=0.8,zorder=3,width=0.55)
     _apply_ax_theme(ax)
     ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}%"))
-    ax.set_xticklabels([str(x[1]) for x in piv_t.index],rotation=0,fontsize=10.5)
+    ax.tick_params(axis='y', colors="#181818")
+    ax.tick_params(axis='x', colors="#181818")
+    ax.set_xticklabels([str(x[1]) for x in piv_t.index],rotation=0,fontsize=10.5, zorder=1)
     ax.set(xlabel="",ylabel="Taux")
     for panier in piv_t.index.get_level_values(PanierVar).unique():
         pos=[i for i,x in enumerate(piv_t.index.get_level_values(PanierVar)) if x==panier]
-        ax.text(sum(pos)/len(pos),-14,panier,ha="center",va="top",
+        ax.text(sum(pos)/len(pos),-11,panier,ha="center",va="top",
                 fontsize=10,color=STRIP_DARK,fontweight="bold")
     for row_i,col_i in np.ndindex(piv_t.shape):
         vm=piv_m.iloc[row_i,col_i];vp=piv_t.iloc[row_i,col_i]
         if vm!=0 and vp>=8:
             p=ax.patches[col_i*len(piv_t)+row_i]
             ax.text(p.get_x()+p.get_width()/2,p.get_y()+p.get_height()/2,
-                    f"{formatM(vm)} €",ha="center",va="center",
-                    color="white",fontweight="bold",fontsize=9)
-    ax.legend(loc="lower center",bbox_to_anchor=(0.5,-0.26),
-              ncol=min(4,len(piv_t.columns)),fontsize=10,frameon=False)
+                    f"{_fmt_euro(vm)}",ha="center",va="center",
+                    color=BG , path_effects=[pe.withStroke(linewidth=2, foreground=STRIP_DARK)],fontweight="bold",fontsize=10.5)
+            ax.legend(loc="lower center",bbox_to_anchor=(0.5,-0.26),
+            ncol=min(4,len(piv_t.columns)),fontsize=10,frameon=False)
+    
     _finalize(fig,f"{Emplacement_stockage}/{titre}Ventilation_coûts_.jpg",qualitéGraphique)
 
 # ── 11. HISTOGRAMME TRANCHES ──────────────────────────────────────────────────
@@ -761,6 +820,8 @@ def Sous_famille_comparaison_montants(data,var,qualitéGraphique,Emplacement_sto
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_k))
     ax.set_xlabel("Tranches de montants (€)",fontsize=11)
     ax.set_ylabel("Occurrences",fontsize=11)
+    ax.tick_params(axis='y', colors="#181818")
+    ax.tick_params(axis='x', colors="#181818")
     plt.xticks(rotation=38,ha="right",fontsize=9.5)
     ax.legend(title="Survenance",fontsize=10.5,frameon=False,loc="best")
     title=f"Distribution montants {sf} {var}"
@@ -807,13 +868,23 @@ def etude_composante_dépense(data,variable_prix,sf,Emplacement_stockage,
         ax.grid(True,linestyle="--",linewidth=0.7,alpha=0.6,color=C_GRID)
         for sp in ax.spines.values(): sp.set_visible(False)
         ax.tick_params(labelsize=10,colors="#666E88",length=0)
-    axes[-1].set_xlabel("Survenance",fontsize=11)
+        y_min_euro = min(axes[0].get_ylim()[0], axes[1].get_ylim()[0])
+        y_max_euro = max(axes[0].get_ylim()[1], axes[1].get_ylim()[1])
+    
+        marge = (y_max_euro - y_min_euro) * 0.12
+        axes[0].set_ylim(y_min_euro - marge, y_max_euro + marge)
+        axes[1].set_ylim(y_min_euro - marge, y_max_euro + marge)
+    
     fig.suptitle(f"{sf}  ·  Évolution des composantes  ·  {nom_var}",
                  fontsize=13,fontweight="bold",color=STRIP_DARK,
                  y=0.97 if layout=="horizontal" else 0.99)
+    for ax in axes:
+        ax.tick_params(axis='y', colors="#181818")
+        ax.tick_params(axis='x', colors="#181818")
+
     fig.text(0.5,0.005,
              "Lecture : chaque graphique représente une composante indépendante de la dépense.",
-             ha="center",fontsize=8.5,color="#999",style="italic")
+             ha="center",fontsize=8.5,color="#181818",style="italic")
     _finalize(fig,os.path.join(Emplacement_stockage,nom_fichier+".jpg"),qualitéGraphique)
 
 # ── 13. DISPERSION COMPARAISON ────────────────────────────────────────────────
@@ -838,34 +909,157 @@ def dispertion_chart_comparaison(df,var_montant,element_titre,
         t[col]=t[col].fillna(0)
     t.rename(columns={"annee_soins":"Survenance"},inplace=True)
     n_annees=t["Survenance"].nunique()
-    bar_colors=[HEX[1],HEX[5]] if n_annees<=2 else HEX[:n_annees]
-    main_title=(f"{element_titre[0]}  ·  Dispersion des remboursements complémentaires"
-                if len(element_titre)==1
-                else f"{', '.join(element_titre)}  ·  Dispersion Remboursement Complémentaire")
+
+    bar_colors=[HEX[1],HEX[4]] if n_annees<=2 else HEX[:n_annees]
+    main_title=(f"{element_titre[0]}  ·  Répartition des consommants selon le remboursement complémentaire")
+    
     fig=_make_fig(13,7)
-    title_h=_strip_title(fig,main_title,
-                         subtitle="Nombre de consommants par tranche")
+
+    title_h=_strip_title(fig,main_title)
+
     ax=_add_main_ax(fig,[0.06,0.10,0.90,1-title_h-0.04-0.10])
     sns.barplot(x="Tranche",y=var_montant,hue="Survenance",data=t,ax=ax,
                 palette=bar_colors,
-                hue_order=sorted(t["Survenance"].unique(),reverse=True),
+                hue_order=sorted(t["Survenance"].unique()),
                 edgecolor=BG,linewidth=0.8,zorder=3)
     _apply_ax_theme(ax)
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
-    ax.set_xlabel("Tranches de montants",fontsize=12)
-    ax.set_ylabel("Remboursement Complémentaire",fontsize=12)
-    plt.xticks(rotation=0,ha="center",fontsize=12.5)
+    ax.set_xlabel("Remboursement Complémentaire" , fontsize=12)
+    ax.tick_params(axis='y', colors="#181818")
+    ax.tick_params(axis='x', colors="#181818")
+    plt.xticks(rotation=0,color = STRIP_DARK,ha="center",fontsize=12.5)
     moy_rc=t[var_montant].replace(0,np.nan).mean()
-    for p in ax.patches:
-        val_rc=p.get_height()
-        match=t.loc[t[var_montant]==val_rc,"id_beneficiaire"]
-        if not match.empty and val_rc>0:
-            nb=match.values[0]
-            ax.annotate(f"{formatM(nb)}",
-                xy=(p.get_x()+p.get_width()/2.,val_rc+(moy_rc or 0)/25),
-                ha="center",va="bottom",fontweight="bold",
-                color=C_ANNOT,fontsize=14,rotation=0)
-    ax.legend(title="Survenances",loc="best",fontsize=12.5,frameon=False)
+    for i, p in enumerate(ax.patches):
+
+        val_rc = p.get_height()
+        match = t.loc[t[var_montant] == val_rc, "id_beneficiaire"]
+        color = p.get_facecolor()
+    
+
+        if not match.empty and val_rc > 0:
+
+            nb = match.values[0]
+
+            ax.annotate(
+                f"{formatM(nb)}",
+                xy=(p.get_x() + p.get_width()/2., val_rc ),
+                xytext=(0, 4),          # ← juste 4 pixels au-dessus de la barre
+                textcoords="offset points",
+                ha="center",
+                va="bottom",
+                fontweight="bold",
+                color= color,
+                fontsize=17,
+                rotation=23
+        )
+    ax.legend(loc="best",fontsize=12.5,frameon=False,reverse = True)
     title=f"Dispersion RC {'_'.join(element_titre)}"
     _finalize(fig,f"{Emplacement_stockage}/dispersion_conso_{''.join(element_titre)}.jpg",
               qualitéGraphique)
+
+
+
+    
+def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotlib"):
+
+    if not isinstance(cat_assure, list):
+        cat_assure = [cat_assure]
+
+    df = d.copy()
+
+    table = pd.pivot_table(
+        df, values='RC', index='cat_assure',
+        columns='annee_soins', aggfunc='sum'
+    )
+
+    rc_porta  = table.loc[cat_assure].sum(axis=0)
+    rc_total  = table.sum()
+    prop_porta = rc_porta / rc_total
+    years     = rc_porta.index.astype(int)
+
+    label_cat = " - ".join(cat_assure) if len(cat_assure) > 1 else cat_assure[0]
+
+    # ── Layout ───────────────────────────────────────────────────────────────
+
+    from matplotlib.ticker import FuncFormatter, EngFormatter
+
+    def _fmt_euro(x, _=None):
+        if abs(x) >= 1_000_000: return f"{x/1_000_000:.1f} M€"
+        if abs(x) >= 1_000:     return f"{x/1_000:.0f} k€"
+        return f"{x:.0f} €"
+
+    fig     = _make_fig(13, 6)
+    title_h = _strip_title(fig,
+        f"Montant total par survenance  ·  Part dans le remboursement global")
+
+    kpi_h   = 0.12
+    bottom  = kpi_h + 0.01
+    ax1     = _add_main_ax(fig, [0.06, bottom, 0.88, 1 - title_h - 0.03 - bottom])
+
+    # ── Barres RC ─────────────────────────────────────────────────────────────
+    x     = np.arange(len(years))
+    bars  = ax1.bar(x, rc_porta.values, color=HEX[2], width=0.5,
+                    edgecolor=BG, linewidth=0.8, alpha=0.90, zorder=3)
+
+    # Légère surbrillance
+    
+
+    _apply_ax_theme(ax1)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(years, fontsize=11)
+    ax1.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
+    ax1.set_axisbelow(True)
+    ax1.tick_params(axis='y', colors="#181818")
+    ax1.tick_params(axis='x', colors="#181818")
+    ax1.tick_params(axis="x", length=0.0)
+
+    # Annotations montants sur barres
+    for bar, val in zip(bars, rc_porta.values):
+        ax1.text(bar.get_x() + bar.get_width()/2,
+                 bar.get_height() * 1.012,
+                 _fmt_euro(val),
+                 ha="center", va="bottom",
+                 fontsize=18, fontweight="bold", color=HEX[2])
+
+    # ── Courbe % (axe droit) ──────────────────────────────────────────────────
+    ax2 = ax1.twinx()
+    ax2.plot(x, prop_porta.values * 100,
+             color=HEX[8], linewidth=2.5, marker="o", markersize=15,
+             zorder=5, markerfacecolor="white",
+             markeredgewidth=2, markeredgecolor=HEX[8])
+    ax2.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.1f} %"))
+    ax2.tick_params(axis="y", labelsize=15, colors="#181818", length=0)
+    for sp in ax2.spines.values(): sp.set_visible(False)
+    ax2.set_ylim(bottom=0,
+                 top=max(prop_porta.values) * 100 * 1.35)
+    ax2.grid(False)
+
+    # Annotations % au-dessus des points
+    for xi, pct in zip(x, prop_porta.values):
+        ax2.annotate(
+            f"{pct*100:.1f} %",
+            xy=(xi, pct * 100),
+            xytext=(0, 10), textcoords="offset points",
+            ha="center", fontsize=17, fontweight="bold",
+            color=HEX[8],
+            bbox=dict(boxstyle="round,pad=0.25",
+                      facecolor="white", edgecolor="none", alpha=0)
+        )
+
+    # ── Légende ───────────────────────────────────────────────────────────────
+    import matplotlib.patches as mpatches
+    import matplotlib.lines as mlines
+    patch = mpatches.Patch(color=HEX[1], label=f"RC")
+    line  = mlines.Line2D([], [], color=HEX[8], marker="o",
+                          markersize=8, markerfacecolor="white",
+                          markeredgewidth=1.5, label="Part dans le total")
+    ax1.legend(handles=[patch, line],
+               loc="lower center", bbox_to_anchor=(0.5, -0.18),
+               ncol=2, fontsize=10.5, frameon=False)
+
+    # ── Sauvegarde ────────────────────────────────────────────────────────────
+    title_safe = (label_cat.replace(' ', '_')
+                            .replace(',', '').replace(':', '')
+                            .replace('-', '_'))
+    filepath = f"{Emplacement_stockage}/RC_proportion_{title_safe}.jpg"
+    _finalize(fig, filepath, 150)

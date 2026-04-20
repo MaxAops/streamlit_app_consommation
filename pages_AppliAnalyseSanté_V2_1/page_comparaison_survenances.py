@@ -5,11 +5,28 @@ import streamlit as st
 
 from fonctions import workOnData
 from fonctions import charts
+from fonctions import build_conso_tables
 
 choix_annee=[2016,2017,2018,2019,2020,2021, 2022, 2023,2024,2025]
 
+df = st.session_state.get("donnees")
+
 
 def comparaison_survenances():
+    df = st.session_state.get("donnees")
+
+    if df is None:
+
+        st.warning("⚠️ Aucune donnée chargée")
+        return
+
+
+    choix_categorie = df["cat_assure"].unique()
+
+
+
+
+
     ID = st.sidebar.radio(
     "Sélectionnez l'identifiant à concidérer",
     ('id_beneficiaire', 'id_assuré'))
@@ -26,15 +43,19 @@ def comparaison_survenances():
         annees=unique_annees
     mois_min, mois_max = st.sidebar.slider("Plage de mois", min_value=1, max_value=12, value=(1, 12))
 
+    cat_assure_choose = st.sidebar.multiselect("selection categorie",choix_categorie, default = choix_categorie)
+
     if st.button('Cliquez ici pour exécuter'):
             cancel = st.button("Annuler")
             if not cancel:
                 # Charger les données CSV à partir du fichier
                 data=workOnData.load_data(st.session_state["donnees"],annees,mois_min, mois_max)
-                charts.Evo_Cons_Moyenne(data, st.session_state["Qualité images"],st.session_state["repertoire_images"],ID)
-                charts.Evo_RC(data,st.session_state["Qualité images"],st.session_state["repertoire_images"])
+                charts.proportion_cat_assure(data,cat_assure_choose,st.session_state["repertoire_images"],ID)
+                charts.Evo_Cons_Moyenne(data,cat_assure_choose, st.session_state["Qualité images"],st.session_state["repertoire_images"],ID)
+                charts.Evo_RC(data,cat_assure_choose,st.session_state["Qualité images"],st.session_state["repertoire_images"])
                 charts.EVO_Montant(data,'RC',st.session_state["Qualité images"],st.session_state["repertoire_images"])
                 charts.EVO_Consommateurs(data,st.session_state["Qualité images"],st.session_state["repertoire_images"],ID)
                 charts.EVO_Remboursement_moy(data,'RC',st.session_state["Qualité images"],st.session_state["repertoire_images"],ID)
+        
             else:
                 st.write("L'exécution a été annulée.")
