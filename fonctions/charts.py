@@ -41,7 +41,7 @@ STRIP_LIGHT= "#EEF1F9"
 C_TITLE    = "#FFFFFF"
 C_SUBTITLE = "#3A4A72"
 C_ANNOT    = "#2B3885"
-C_GRID     = "#EEF1F9"
+C_GRID     = "#B6B6B6"
 C_ZERO     = "#A0AAC0"
 C_KPIBG    = "#FFFFFF"
 C_KPIBORDER= "#2C67AF"
@@ -331,7 +331,7 @@ def PlotVentilationCouts(df_data,annee,qualitéGraphique,Emplacement_stockage,ID
     ax.set_xticklabels(stk.index,rotation=00,ha="center",fontsize=15.5)
     ax.tick_params(axis='x',pad=4)
     ax.set(xlabel="",ylabel="")
-    ax.tick_params(axis='y', colors="#181818")
+    ax.tick_params(axis='y', colors="#181818",labelsize=15)
     ax.tick_params(axis='x', colors="#181818")
     idx_list=list(t.index);col_names=["rbt_ss","RC","RàC"];n_idx=len(idx_list)
     for pi,p in enumerate(ax.patches):
@@ -385,7 +385,7 @@ def distributionFamilleActes(df,annee,Emplacement_stockage,qualitéGraphique):
                 color="white",zorder=3,
                 path_effects=[pe.withStroke(linewidth=2,foreground=color)])
     ax.set_title(f"Distribution des familles d'actes  ·  {annee}",
-                 fontsize=15,fontweight="bold",color="white",pad=14)
+                 fontsize=15,fontweight="bold",color="white",pad=0)
     fig.patch.set_facecolor(STRIP_DARK)
     title=f"Distribution actes {annee}"
     plt.title(title,color=STRIP_DARK, weight='bold',fontsize=13 )
@@ -403,10 +403,6 @@ def Evo_Cons_Moyenne(df, cat_assure, qualitéGraphique, Emplacement_stockage, ID
         cat_assure = [cat_assure]
 
     df = df[df["cat_assure"].isin(cat_assure)]
-
-    
-
-
 
 
     df = df.copy()
@@ -490,8 +486,8 @@ def Evo_Cons_Moyenne(df, cat_assure, qualitéGraphique, Emplacement_stockage, ID
         ymin_ax, ymax_ax = ax.get_ylim()
         pad = (ymax_ax - ymin_ax) * 0.2
         ax.set_ylim(ymin_ax - pad, ymax_ax + pad)
-        ax.tick_params(axis='y', colors="#181818")
-        ax.tick_params(axis='x', colors="#181818")
+        ax.tick_params(axis='y', colors="#181818", labelsize=12)
+        ax.tick_params(axis='x', colors="#181818", labelsize=12)
         ax.legend(
             handles=[mpatches.Patch(color=palette[i], label=col)
                      for i, col in enumerate(evol_cols)],
@@ -521,8 +517,8 @@ def Evo_Cons_Moyenne(df, cat_assure, qualitéGraphique, Emplacement_stockage, ID
         ax.set_xticklabels(table.index, rotation=0, ha="right", fontsize=15)
         ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}%"))
         _apply_ax_theme(ax)
-        ax.tick_params(axis='y', colors="#181818")
-        ax.tick_params(axis='x', colors="#181818")
+        ax.tick_params(axis='y', colors="#181818", labelsize=12)
+        ax.tick_params(axis='x', colors="#181818", labelsize=12)
         pad_pct = (ax.get_ylim()[1]-ax.get_ylim()[0]) * 0.15
         ax.set_ylim(ax.get_ylim()[0]-pad_pct, ax.get_ylim()[1]+pad_pct)
 
@@ -557,10 +553,12 @@ def EVO_Consommateurs(df,qualitéGraphique,Emplacement_stockage,ID):
     ax.set_xticks(range(mois_min,mois_max+1))
     ax.set_xticklabels(MOIS[mois_min-1:mois_max],fontsize=10.5)
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_k))
-    ax.tick_params(axis='y', colors="#181818")
-    ax.tick_params(axis='x', colors="#181818")
+    ax.tick_params(axis='y', colors="#181818", labelsize=15)
+    ax.tick_params(axis='x', colors="#181818", labelsize=15)
     ax.set_ylabel("Consommants",fontsize=11)
-    ax.legend(title="Survenance",fontsize=11.5,title_fontsize=11.5,frameon=False,loc="center right")
+    ax.legend(title="Survenance",fontsize=15,title_fontsize=15,frameon=False,loc="best")
+    title=f"Évolution mensuelle du nombre de consommants"
+    _strip_title(fig,title)
     _finalize(fig,f"{Emplacement_stockage}/Évolution nb consommants.jpg",qualitéGraphique)
 
 # ── 6. ÉVOLUTION REMBOURSEMENT MOYEN ─────────────────────────────────────────
@@ -596,9 +594,11 @@ def EVO_Remboursement_moy(df,var,qualitéGraphique,Emplacement_stockage,ID):
             ax.fill_between(sub["mois_soins"],sub["Moy"],alpha=0.08,color=col,zorder=2)
     _apply_ax_theme(ax)
     ax.set_xticks(range(mois_min,mois_max+1))
-    ax.set_xticklabels(MOIS[mois_min-1:mois_max],fontsize=11.5)
+    ax.set_xticklabels(MOIS[mois_min-1:mois_max])
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
-    ax.legend(title="Survenance",fontsize=11.5,title_fontsize=11.5,frameon=False,loc="upper right")
+    ax.tick_params(axis='y', colors="#181818", labelsize=15)
+    ax.tick_params(axis='x', colors="#181818", labelsize=15)
+    ax.legend(title="Survenance",fontsize=15,title_fontsize=15,frameon=False,loc="best")
     title=f"Évolution {name} moyen"
     _finalize(fig,f"{Emplacement_stockage}/{title}.jpg",qualitéGraphique)
 
@@ -646,7 +646,7 @@ def Evo_RC(df,cat_assure,qualitéGraphique,Emplacement_stockage):
     ax.set_yticklabels(list(y_pos.keys()),fontsize=15, color = "#181818")
     ax.xaxis.set_major_formatter(FuncFormatter(_fmt_euro))
     ax.set_xlim(0, t["RC"].max() * 1.2)
-    ax.tick_params(axis='x', colors="#181818")
+    ax.tick_params(axis='x', colors="#181818",labelsize=15)
 
     for spine in plt.gca().spines.values():
         spine.set_visible(False)
@@ -655,7 +655,7 @@ def Evo_RC(df,cat_assure,qualitéGraphique,Emplacement_stockage):
     seen={}
     for h,l in zip(reversed(handles),reversed(labels)):
         if l not in seen: seen[l]=h
-    ax.legend(seen.values(),seen.keys(),loc="upper right",fontsize=11.5,frameon=False)
+    ax.legend(seen.values(),seen.keys(),loc="upper right",fontsize=15,frameon=False)
     if df["annee_soins"].nunique()==1:
         title=f"RC par famille {annees[0]}"
     else:
@@ -692,11 +692,11 @@ def EVO_Montant(df,var,qualitéGraphique,Emplacement_stockage):
             ax.fill_between(sub["mois_soins"],sub[var],alpha=0.08,color=col,zorder=2)
     _apply_ax_theme(ax)
     ax.set_xticks(range(mois_min,mois_max+1))
-    ax.set_xticklabels(MOIS[mois_min-1:mois_max],fontsize=10.5)
+    ax.set_xticklabels(MOIS[mois_min-1:mois_max],fontsize=11.5)
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
-    ax.tick_params(axis='y', colors="#181818",fontsize=15)
-    ax.tick_params(axis='x', colors="#181818")
-    ax.legend(title="Survenance",fontsize=10.5,title_fontsize=10.5,frameon=False,loc="best")
+    ax.tick_params(axis='y', colors="#181818",  labelsize=15)
+    ax.tick_params(axis='x', colors="#181818", labelsize=15)
+    ax.legend(title="Survenance",fontsize=15,title_fontsize=15,frameon=False,loc="best")
     title=f"Évolution mensuelle {name}"
     _finalize(fig,f"{Emplacement_stockage}/{title}.jpg",qualitéGraphique)
 
@@ -820,10 +820,10 @@ def Sous_famille_comparaison_montants(data,var,qualitéGraphique,Emplacement_sto
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_k))
     ax.set_xlabel("Tranches de montants (€)",fontsize=11)
     ax.set_ylabel("Occurrences",fontsize=11)
-    ax.tick_params(axis='y', colors="#181818")
-    ax.tick_params(axis='x', colors="#181818")
+    ax.tick_params(axis='y', colors="#181818", labelsize=15)
+    ax.tick_params(axis='x', colors="#181818", labelsize=15)
     plt.xticks(rotation=38,ha="right",fontsize=9.5)
-    ax.legend(title="Survenance",fontsize=10.5,frameon=False,loc="best")
+    ax.legend(title="Survenance",fontsize=15,frameon=False,loc="best")
     title=f"Distribution montants {sf} {var}"
     _finalize(fig,f"{Emplacement_stockage}/{title}.jpg",qualitéGraphique)
 
@@ -865,7 +865,7 @@ def etude_composante_dépense(data,variable_prix,sf,Emplacement_stockage,
                 ha="center",fontsize=9,color=col_color,fontweight="bold")
         ax.set_title(titre_ax,fontsize=11,color=STRIP_DARK,fontweight="bold",pad=8)
         ax.set_facecolor(BG_AX)
-        ax.grid(True,linestyle="--",linewidth=0.7,alpha=0.6,color=C_GRID)
+        ax.grid(True,linestyle="--",linewidth=0.7,alpha=1,color=C_GRID)
         for sp in ax.spines.values(): sp.set_visible(False)
         ax.tick_params(labelsize=10,colors="#666E88",length=0)
         y_min_euro = min(axes[0].get_ylim()[0], axes[1].get_ylim()[0])
@@ -879,8 +879,8 @@ def etude_composante_dépense(data,variable_prix,sf,Emplacement_stockage,
                  fontsize=13,fontweight="bold",color=STRIP_DARK,
                  y=0.97 if layout=="horizontal" else 0.99)
     for ax in axes:
-        ax.tick_params(axis='y', colors="#181818")
-        ax.tick_params(axis='x', colors="#181818")
+        ax.tick_params(axis='y', colors="#181818",labelsize=12)
+        ax.tick_params(axis='x', colors="#181818",labelsize=12)
 
     fig.text(0.5,0.005,
              "Lecture : chaque graphique représente une composante indépendante de la dépense.",
@@ -924,10 +924,14 @@ def dispertion_chart_comparaison(df,var_montant,element_titre,
                 edgecolor=BG,linewidth=0.8,zorder=3)
     _apply_ax_theme(ax)
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
-    ax.set_xlabel("Remboursement Complémentaire" , fontsize=12)
-    ax.tick_params(axis='y', colors="#181818")
-    ax.tick_params(axis='x', colors="#181818")
-    plt.xticks(rotation=0,color = STRIP_DARK,ha="center",fontsize=12.5)
+    ax.set_xlabel("")
+    # Rotation adaptative selon le nombre de tranches
+    n_tranches = t["Tranche"].nunique()
+    if n_tranches > 8:
+        plt.xticks(rotation=35, color=STRIP_DARK, ha="right",fontsize=12)
+    else:
+        plt.xticks(rotation=0, color=STRIP_DARK, ha="center",fontsize=12)
+
     moy_rc=t[var_montant].replace(0,np.nan).mean()
     for i, p in enumerate(ax.patches):
 
@@ -949,10 +953,11 @@ def dispertion_chart_comparaison(df,var_montant,element_titre,
                 va="bottom",
                 fontweight="bold",
                 color= color,
-                fontsize=17,
+                fontsize=12,
                 rotation=23
         )
-    ax.legend(loc="best",fontsize=12.5,frameon=False,reverse = True)
+    ax.tick_params(axis='y', colors="#181818",labelsize=15)
+    ax.legend(loc="best",fontsize=15,frameon=False,reverse = True)
     title=f"Dispersion RC {'_'.join(element_titre)}"
     _finalize(fig,f"{Emplacement_stockage}/dispersion_conso_{''.join(element_titre)}.jpg",
               qualitéGraphique)
@@ -1009,8 +1014,8 @@ def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotl
     ax1.set_xticklabels(years, fontsize=11)
     ax1.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
     ax1.set_axisbelow(True)
-    ax1.tick_params(axis='y', colors="#181818")
-    ax1.tick_params(axis='x', colors="#181818")
+    ax1.tick_params(axis='y', colors="#181818",labelsize=15)
+    ax1.tick_params(axis='x', colors="#181818",labelsize=15)
     ax1.tick_params(axis="x", length=0.0)
 
     # Annotations montants sur barres
@@ -1027,7 +1032,7 @@ def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotl
              color=HEX[8], linewidth=2.5, marker="o", markersize=15,
              zorder=5, markerfacecolor="white",
              markeredgewidth=2, markeredgecolor=HEX[8])
-    ax2.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.1f} %"))
+    ax2.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.0f} %"))
     ax2.tick_params(axis="y", labelsize=15, colors="#181818", length=0)
     for sp in ax2.spines.values(): sp.set_visible(False)
     ax2.set_ylim(bottom=0,
@@ -1055,7 +1060,7 @@ def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotl
                           markeredgewidth=1.5, label="Part dans le total")
     ax1.legend(handles=[patch, line],
                loc="lower center", bbox_to_anchor=(0.5, -0.18),
-               ncol=2, fontsize=10.5, frameon=False)
+               ncol=2, fontsize=15, frameon=False)
 
     # ── Sauvegarde ────────────────────────────────────────────────────────────
     title_safe = (label_cat.replace(' ', '_')
