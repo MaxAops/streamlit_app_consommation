@@ -476,11 +476,16 @@ def Evo_Cons_Moyenne(df, cat_assure, qualitéGraphique, Emplacement_stockage, ID
                 ax.annotate(f"{sign}{v:.0f}%",
                     xy=(x[xi] + off, v + (pad*0.15 if v >= 0 else -pad*0.25)),
                     ha="center", va="bottom" if v >= 0 else "top",
-                    size=14, xytext=(0, 8), textcoords="offset points",
-                    rotation=0, color=color)
+                    size=17, xytext=(0, 8), textcoords="offset points",
+                    rotation=0, color=color,fontweight="bold")
 
         ax.axhline(0, color=C_ZERO, linewidth=1.2, zorder=2)
         ax.set_xticks(x)
+        for i, label in enumerate(ax.get_xticklabels()):
+
+            if i % 2 == 1:
+                label.set_y(label.get_position()[1] - 0.025)
+
         ax.set_xticklabels(table.index, fontsize=30, rotation=0, ha="center")
         ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}%"))
         _apply_ax_theme(ax)
@@ -490,8 +495,8 @@ def Evo_Cons_Moyenne(df, cat_assure, qualitéGraphique, Emplacement_stockage, ID
         ymin_ax, ymax_ax = ax.get_ylim()
         pad = (ymax_ax - ymin_ax) * 0.2
         ax.set_ylim(ymin_ax - pad, ymax_ax + pad)
-        ax.tick_params(axis='y', colors="#181818")
-        ax.tick_params(axis='x', colors="#181818")
+        ax.tick_params(axis='y', colors="#181818", labelsize = 15)
+        ax.tick_params(axis='x', colors="#181818", labelsize= 15)
         ax.legend(
             handles=[mpatches.Patch(color=palette[i], label=col)
                      for i, col in enumerate(evol_cols)],
@@ -519,10 +524,14 @@ def Evo_Cons_Moyenne(df, cat_assure, qualitéGraphique, Emplacement_stockage, ID
         ax.axhline(0, color=C_ZERO, linewidth=1.2, zorder=2)
         ax.set_xticks(x)
         ax.set_xticklabels(table.index, rotation=0, ha="right", fontsize=15)
+        for i, label in enumerate(ax.get_xticklabels()):
+            if i % 2 == 1:
+                label.set_y(label.get_position()[1] - 0.05)
+
         ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}%"))
         _apply_ax_theme(ax)
-        ax.tick_params(axis='y', colors="#181818")
-        ax.tick_params(axis='x', colors="#181818")
+        ax.tick_params(axis='y', colors="#181818",labelsize=15)
+        ax.tick_params(axis='x', colors="#181818",labelsize=15)
         pad_pct = (ax.get_ylim()[1]-ax.get_ylim()[0]) * 0.15
         ax.set_ylim(ax.get_ylim()[0]-pad_pct, ax.get_ylim()[1]+pad_pct)
 
@@ -640,13 +649,13 @@ def Evo_RC(df,cat_assure,qualitéGraphique,Emplacement_stockage):
                     edgecolor=BG,linewidth=0.8,zorder=3,
                     label=str(annee) if fam==ordre[0] else "")
             ax.text(row["RC"]*1.01,y,f"{row['pct']*100:.1f} %",
-                    va="center",fontsize=12.5,color=col,fontweight="bold")
+                    va="center",fontsize=20,color=col,fontweight="bold")
     _apply_ax_theme(ax)
     ax.set_yticks(list(y_pos.values()))
-    ax.set_yticklabels(list(y_pos.keys()),fontsize=15, color = "#181818")
+    ax.set_yticklabels(list(y_pos.keys()),fontsize=17, color = "#181818")
     ax.xaxis.set_major_formatter(FuncFormatter(_fmt_euro))
     ax.set_xlim(0, t["RC"].max() * 1.2)
-    ax.tick_params(axis='x', colors="#181818")
+    ax.tick_params(axis='x', colors="#181818", labelsize=17)
 
     for spine in plt.gca().spines.values():
         spine.set_visible(False)
@@ -694,8 +703,8 @@ def EVO_Montant(df,var,qualitéGraphique,Emplacement_stockage):
     ax.set_xticks(range(mois_min,mois_max+1))
     ax.set_xticklabels(MOIS[mois_min-1:mois_max],fontsize=10.5)
     ax.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
-    ax.tick_params(axis='y', colors="#181818",fontsize=15)
-    ax.tick_params(axis='x', colors="#181818")
+    ax.tick_params(axis='y', colors="#181818",labelsize=15)
+    ax.tick_params(axis='x', colors="#181818",labelsize=15)
     ax.legend(title="Survenance",fontsize=10.5,title_fontsize=10.5,frameon=False,loc="best")
     title=f"Évolution mensuelle {name}"
     _finalize(fig,f"{Emplacement_stockage}/{title}.jpg",qualitéGraphique)
@@ -725,8 +734,8 @@ def Panier_plot(d,ID,PanierVar,titre,qualitéGraphique,Emplacement_stockage):
     x_min,x_max=ax.get_xlim();y_min,y_max=ax.get_ylim()
     ax.set_xlim(x_min-(x_max-x_min)*0.25,x_max+(x_max-x_min)*0.25)
     ax.set_ylim(y_min-(y_max-y_min)*0.25,y_max+(y_max-y_min)*0.25)
-    ax.tick_params(axis='y', colors="#181818")
-    ax.tick_params(axis='x', colors="#181818")
+    ax.tick_params(axis='y', colors="#181818",labelsize=15)
+    ax.tick_params(axis='x', colors="#181818",labelsize=15)
     lfs=base_fs*max(0.65,min(1.0,7/len(t)))
     texts=[]
     for _,row in t.iterrows():
@@ -777,8 +786,8 @@ def Panier_plot_ventilation(d,ID,PanierVar,titre,qualitéGraphique,Emplacement_s
                    edgecolor=BG,linewidth=0.8,zorder=3,width=0.55)
     _apply_ax_theme(ax)
     ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}%"))
-    ax.tick_params(axis='y', colors="#181818")
-    ax.tick_params(axis='x', colors="#181818")
+    ax.tick_params(axis='y', colors="#181818",labelsize=15)
+    ax.tick_params(axis='x', colors="#181818",labelsize=15)
     ax.set_xticklabels([str(x[1]) for x in piv_t.index],rotation=0,fontsize=10.5, zorder=1)
     ax.set(xlabel="",ylabel="Taux")
     for panier in piv_t.index.get_level_values(PanierVar).unique():
@@ -854,26 +863,35 @@ def etude_composante_dépense(data,variable_prix,sf,Emplacement_stockage,
     else:
         fig,axes=plt.subplots(3,1,figsize=(7,10),facecolor=BG,sharex=True)
         fig.subplots_adjust(top=0.88,bottom=0.07,left=0.14,right=0.92,hspace=0.4)
-    for ax,(titre_ax,col,col_color,marker) in zip(axes,infos):
-        ax.plot(df_graph["annee_soins"],df_graph[col],marker=marker,color=col_color,
-                linewidth=2.5,markersize=8,zorder=3,markerfacecolor="white",
-                markeredgewidth=2.2,markeredgecolor=col_color)
-        for _,row in df_graph.iterrows():
+    for ax, (titre_ax, col, col_color, marker) in zip(axes, infos):
+        ax.plot(df_graph["annee_soins"], df_graph[col], marker=marker, color=col_color,
+            linewidth=2.5, markersize=8, zorder=3, markerfacecolor="white",
+            markeredgewidth=2.2, markeredgecolor=col_color)
+        for _, row in df_graph.iterrows():
             ax.annotate(f"{row[col]:,.0f}".replace(",", " "),
-                xy=(row["annee_soins"],row[col]),
-                xytext=(0,9),textcoords="offset points",
-                ha="center",fontsize=9,color=col_color,fontweight="bold")
-        ax.set_title(titre_ax,fontsize=11,color=STRIP_DARK,fontweight="bold",pad=8)
+                xy=(row["annee_soins"], row[col]),
+                xytext=(0, 9), textcoords="offset points",
+                ha="center", fontsize=9, color=col_color, fontweight="bold")
+        ax.set_title(titre_ax, fontsize=11, color=STRIP_DARK, fontweight="bold", pad=8)
         ax.set_facecolor(BG_AX)
-        ax.grid(True,linestyle="--",linewidth=0.7,alpha=0.6,color=C_GRID)
+        ax.grid(True, linestyle="--", linewidth=0.7, alpha=0.6, color=C_GRID)
         for sp in ax.spines.values(): sp.set_visible(False)
-        ax.tick_params(labelsize=10,colors="#666E88",length=0)
-        y_min_euro = min(axes[0].get_ylim()[0], axes[1].get_ylim()[0])
-        y_max_euro = max(axes[0].get_ylim()[1], axes[1].get_ylim()[1])
+        ax.tick_params(labelsize=10, colors="#666E88", length=0)
+
+
+    y_max_01 = max(axes[0].get_ylim()[1], axes[1].get_ylim()[1])
+    marge = y_max_01 * 0.15
+
+    y_max_02 = max(axes[1].get_ylim()[1], axes[1].get_ylim()[1])
+    marge2 = y_max_02 * 0.15
+
+    axes[0].set_ylim(0, y_max_01 + marge)
+    axes[1].set_ylim(0, y_max_02 + marge2)
+
+# Le 3ème garde sa propre échelle, juste floor à 0
+    y_max_2 = axes[2].get_ylim()[1]
+    axes[2].set_ylim(0, y_max_2 * 1.15)
     
-        marge = (y_max_euro - y_min_euro) * 0.12
-        axes[0].set_ylim(y_min_euro - marge, y_max_euro + marge)
-        axes[1].set_ylim(y_min_euro - marge, y_max_euro + marge)
     
     fig.suptitle(f"{sf}  ·  Évolution des composantes  ·  {nom_var}",
                  fontsize=13,fontweight="bold",color=STRIP_DARK,
@@ -959,7 +977,9 @@ def dispertion_chart_comparaison(df,var_montant,element_titre,
 
 
 
-    
+### 14 proportion des prest pae categorie 
+
+
 def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotlib"):
 
     if not isinstance(cat_assure, list):
@@ -1006,11 +1026,11 @@ def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotl
 
     _apply_ax_theme(ax1)
     ax1.set_xticks(x)
-    ax1.set_xticklabels(years, fontsize=11)
+    ax1.set_xticklabels(years, fontsize=15)
     ax1.yaxis.set_major_formatter(FuncFormatter(_fmt_euro))
     ax1.set_axisbelow(True)
-    ax1.tick_params(axis='y', colors="#181818")
-    ax1.tick_params(axis='x', colors="#181818")
+    ax1.tick_params(axis='y', colors="#181818",labelsize=15)
+    ax1.tick_params(axis='x', colors="#181818",labelsize=15)
     ax1.tick_params(axis="x", length=0.0)
 
     # Annotations montants sur barres
@@ -1019,13 +1039,13 @@ def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotl
                  bar.get_height() * 1.012,
                  _fmt_euro(val),
                  ha="center", va="bottom",
-                 fontsize=18, fontweight="bold", color=HEX[2])
+                 fontsize=18, fontweight="bold",zorder = 10, color=HEX[2])
 
     # ── Courbe % (axe droit) ──────────────────────────────────────────────────
     ax2 = ax1.twinx()
     ax2.plot(x, prop_porta.values * 100,
-             color=HEX[8], linewidth=2.5, marker="o", markersize=15,
-             zorder=5, markerfacecolor="white",
+             color=HEX[8], linewidth=2.5, marker="o", markersize=7,
+             zorder=1, markerfacecolor="white",
              markeredgewidth=2, markeredgecolor=HEX[8])
     ax2.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.1f} %"))
     ax2.tick_params(axis="y", labelsize=15, colors="#181818", length=0)
@@ -1038,8 +1058,9 @@ def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotl
     for xi, pct in zip(x, prop_porta.values):
         ax2.annotate(
             f"{pct*100:.1f} %",
+            zorder=2,
             xy=(xi, pct * 100),
-            xytext=(0, 10), textcoords="offset points",
+            xytext=(0, -30), textcoords="offset points",
             ha="center", fontsize=17, fontweight="bold",
             color=HEX[8],
             bbox=dict(boxstyle="round,pad=0.25",
@@ -1055,7 +1076,7 @@ def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotl
                           markeredgewidth=1.5, label="Part dans le total")
     ax1.legend(handles=[patch, line],
                loc="lower center", bbox_to_anchor=(0.5, -0.18),
-               ncol=2, fontsize=10.5, frameon=False)
+               ncol=2, fontsize=13.5, frameon=False)
 
     # ── Sauvegarde ────────────────────────────────────────────────────────────
     title_safe = (label_cat.replace(' ', '_')

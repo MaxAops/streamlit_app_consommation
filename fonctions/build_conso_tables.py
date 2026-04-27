@@ -458,7 +458,6 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
 
 
     table=pd.pivot_table(dfassureur, values=['frais_reels','RàC','RC','rbt_ss','nb_acte'], index=[mesure], aggfunc='sum').reset_index()
-    table['Remboursement complémentaire moyen (par acte)']=round(table['RC']/table['nb_acte'],2)
     table=table[table[mesure]!='Divers']
     table.index=table[mesure]
 
@@ -493,18 +492,22 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
     table['frais_reels']=np.where(table['RàC']<0,table['rbt_ss']+table['RC'],table['frais_reels'])
     table['RàC']=table['frais_reels']-table['RC']-table['rbt_ss']
     table.rename(columns={ID: "Nombre consommants",'frais_reels':'Frais réels','RàC':'Reste à charge','rbt_ss':'Remboursement sécurité sociale','RC':'Remboursement complémentaire','nb_acte':'Nombre actes'},inplace=True)
+    table['Remboursement complémentaire moyen par consommant']=(table['Remboursement complémentaire']/table['Nombre consommants']).round(2)
 
-    TT = pd.DataFrame([[dfassureur[ID].nunique(),dfassureur['frais_reels'].sum(),dfassureur['rbt_ss'].sum(),dfassureur['RC'].sum(),dfassureur['RàC'].sum(),dfassureur['nb_acte'].sum(),(dfassureur['RC'].sum()/dfassureur['nb_acte'].sum())]], columns=['Nombre consommants','frais_reels','Remboursement sécurité sociale','Remboursement complémentaire','RàC','Nombre actes','Remboursement complémentaire moyen (par acte)'], index=['Total']).reset_index().rename(columns={'index':mesure,'frais_reels':'Frais réels','RàC':'Reste à charge'})
+    TT = pd.DataFrame([[dfassureur[ID].nunique(),dfassureur['frais_reels'].sum(),dfassureur['rbt_ss'].sum(),dfassureur['RC'].sum(),dfassureur['RàC'].sum(),dfassureur['nb_acte'].sum(),(dfassureur['RC'].sum()/dfassureur['nb_acte'].sum())]], columns=['Nombre consommants','frais_reels','Remboursement sécurité sociale','Remboursement complémentaire','RàC','Nombre actes','Remboursement complémentaire moyen par acte'], index=['Total']).reset_index().rename(columns={'index':mesure,'frais_reels':'Frais réels','RàC':'Reste à charge'})
+    TT['Remboursement complémentaire moyen par consommant'] = (dfassureur['RC'].sum() / dfassureur[ID].nunique()).round(2)
+    
+    TT=TT[[mesure,'Nombre actes','Frais réels','Remboursement complémentaire','Remboursement sécurité sociale','Reste à charge','Nombre consommants','Remboursement complémentaire moyen par consommant']]
+    # Harmonisation colonne
 
-    TT=TT[[mesure,'Nombre actes','Frais réels','Remboursement complémentaire','Remboursement sécurité sociale','Reste à charge','Nombre consommants','Remboursement complémentaire moyen (par acte)']]
     table=pd.concat([table,TT],axis=0)
     table['Taux de couverture']=(table['Remboursement complémentaire']+table['Remboursement sécurité sociale'])/table['Frais réels']
-    table = table[[mesure,'Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge','Taux de couverture','Remboursement complémentaire moyen (par acte)']].reset_index(drop=True).fillna(0) # 'Frais réels','Remboursement sécurité sociale'
+    table = table[[mesure,'Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge','Taux de couverture','Remboursement complémentaire moyen par consommant']].reset_index(drop=True).fillna(0) # 'Frais réels','Remboursement sécurité sociale'
     tableAvantMiseEnforme=table.copy()
 
     table[['Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge']]=table[['Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge']].map(formatM) # 'Frais réels','Remboursement sécurité sociale'
     table = table.rename(columns={mesure: f"Survenance {annee}"})   
-    table['Remboursement complémentaire moyen (par acte)']=table['Remboursement complémentaire moyen (par acte)'].apply(lambda x: '{:.2f} €'.format(x))
+    table['Remboursement complémentaire moyen par consommant']=table['Remboursement complémentaire moyen par consommant'].apply(lambda x: '{:.2f} €'.format(x))
     table=table.style.format({'Taux de couverture': "{:.1%}"})
 
     table=format_table_Sousfamille(table,annee)
