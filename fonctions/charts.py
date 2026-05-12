@@ -770,7 +770,7 @@ def Panier_plot_ventilation(d,ID,PanierVar,titre,qualitéGraphique,Emplacement_s
     piv_t=res[["annee_soins",PanierVar,"sous_famille","taux"]].pivot(
         index=[PanierVar,"annee_soins"],columns=["sous_famille"],values="taux").fillna(0)
     if PanierVar=="sante_100" and "Dentaire" in d["famille_acte_aops"].unique():
-        ordre=["100% Santé","Maîtrisés","Libre"]
+        ordre=["100% Santé","Maîtrisés","Libres"]
         for piv in (piv_t,piv_m):
             piv.index=pd.MultiIndex.from_arrays([
                 pd.Categorical(piv.index.get_level_values(PanierVar),

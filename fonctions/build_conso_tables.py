@@ -675,7 +675,7 @@ def table_dentaire(df):
 
     # Suppression du total en colonne uniquement
     pt = pt.drop(columns='Total', level=1)
-    ordre=['100% Santé','Maîtrisés','Libre','Total']
+    ordre=['100% Santé','Maîtrisés','Libres','Total']
     ordre_table=[]
     for o in ordre:
         if o in pt.index:
