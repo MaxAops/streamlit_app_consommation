@@ -66,7 +66,10 @@ SC={'Honoraires paramédicaux':1,
                  'Transport':7,
                  'Forfaits':8,
                  'Cures Thermales':9,
-                 'Audioprothèses':10}
+                 'Audioprothèses':10,
+                 'Fauteuils roulants':11,
+                 'Prothèses capillaires':12,
+                 'Maternité':13}
 
 L_SC=sorted(SC, key=SC.get)
 
