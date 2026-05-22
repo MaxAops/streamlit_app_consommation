@@ -1147,3 +1147,85 @@ def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotl
                             .replace('-', '_'))
     filepath = f"{Emplacement_stockage}/RC_proportion_{title_safe}.jpg"
     _finalize(fig, filepath, 150)
+
+
+def table_evolution_kpis(df, cat_assure, annees, ID, Emplacement_stockage, backend="chrome"):
+    df_filtre = df[df['annee_soins'].isin(annees)].copy()
+    df_filtre = df_filtre[df_filtre['cat_assure'].isin(cat_assure)]
+
+    annee = max(annees)
+    resultats = {}
+    for a in annees:
+        sub = df_filtre[df_filtre['annee_soins'] == a]
+        if sub.empty:
+            resultats[a] = {'RC': 0, 'conso': 0, 'rc_moyen': 0}
+        else:
+            rc_total = sub.groupby(ID)['RC'].sum().sum()
+            nb_conso = sub[ID].nunique()
+            rc_moyen = round(rc_total / nb_conso, 2) if nb_conso > 0 else 0
+            resultats[a] = {'RC': rc_total, 'conso': nb_conso, 'rc_moyen': rc_moyen}
+
+    def evol(v_new, v_old):
+        if v_old == 0:
+            return None
+        return (v_new / v_old - 1)
+
+    col1 = f"{annee-1} / {annee-2}"
+    col2 = f"{annee} / {annee-1}"
+
+    lignes = [
+        {
+            'Indicateur': 'Remboursement complémentaire',
+            col1: evol(resultats[annee-1]['RC'],      resultats[annee-2]['RC']),
+            col2: evol(resultats[annee]['RC'],         resultats[annee-1]['RC']),
+        },
+        {
+            'Indicateur': 'Nombre de consommants',
+            col1: evol(resultats[annee-1]['conso'],   resultats[annee-2]['conso']),
+            col2: evol(resultats[annee]['conso'],      resultats[annee-1]['conso']),
+        },
+        {
+            'Indicateur': 'Remboursement complémentaire moyen',
+            col1: evol(resultats[annee-1]['rc_moyen'], resultats[annee-2]['rc_moyen']),
+            col2: evol(resultats[annee]['rc_moyen'],   resultats[annee-1]['rc_moyen']),
+        },
+    ]
+
+    table = pd.DataFrame(lignes)
+    tableAvantMiseEnforme = table.copy()
+
+    def fmt_pct(v):
+        if v is None or (isinstance(v, float) and np.isnan(v)):
+            return "N/D"
+        sign = "+" if v >= 0 else ""
+        return f"{sign}{v*100:.1f} %"
+
+    table[col1] = table[col1].map(fmt_pct)
+    table[col2] = table[col2].map(fmt_pct)
+    table = table.rename(columns={'Indicateur': 'Evolution'})
+
+    n_rows = len(table)
+    styled = (table.style
+              .set_table_styles(_base_table_styles(), overwrite=True)
+              .hide(axis='index'))
+
+    styled = styled.set_table_styles([
+    
+        {"selector": "td", 
+        "props": [("text-align", "center"), ("width", "140px")]}
+            ], overwrite=False)
+    styled = _style_label_col(styled, 'Evolution')
+    styled = styled.map(_color_pct, subset=[col1, col2])
+    styled = styled.set_properties(**{'width': '140px', 'text-align': 'center'})
+
+    st.markdown(styled.to_html(), unsafe_allow_html=True)
+
+    try:
+        dfi.export(
+            styled,
+            f"{Emplacement_stockage}/table_evolution_kpis_{annee}.jpg",
+            dpi=150, table_conversion=backend)
+    except:
+        print("erreur dfi export table_evolution_kpis")
+
+    return tableAvantMiseEnforme

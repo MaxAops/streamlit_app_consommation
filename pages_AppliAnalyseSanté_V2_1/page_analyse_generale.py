@@ -11,6 +11,8 @@ from fonctions import build_conso_tables
 choix_annee=[2016,2017,2018,2019,2020,2021, 2022, 2023,2024,2025]
 
 
+
+
 def Analyse_generale():
     ID = st.sidebar.radio(
     "Sélectionnez l'identifiant à concidérer",
@@ -43,5 +45,7 @@ def Analyse_generale():
                 data=workOnData.load_data(st.session_state["donnees"],annee,mois_min, mois_max,familles_actes)
                 charts.PlotVentilationCouts(data, annee,st.session_state["Qualité images"],st.session_state["repertoire_images"],ID)
                 charts.distributionFamilleActes(data,annee,st.session_state["repertoire_images"],st.session_state["Qualité images"])
+                charts.distributionFamilleActes_pyramide(data,annee,st.session_state["repertoire_images"],st.session_state["Qualité images"])
+                charts.distributionFamilleActes_donut(data,annee,st.session_state["repertoire_images"],st.session_state["Qualité images"])
             else:
                 st.write("L'exécution a été annulée.")
