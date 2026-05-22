@@ -258,7 +258,7 @@ def TableConso(df,Emplacement_stockage,ID,backend):
 
     n_rows = len(table.index)
     table = (table.style
-             .format({'Taux de couverture': "{:.0%}"})
+             .format({'Taux de couverture': lambda x: f"{x*100:.0f}".replace(".", ",") + " %"})
              .set_table_styles(_base_table_styles(), overwrite=True)
              .hide(axis='index'))
     table = _style_label_col(table, f"Survenance {annee}")
@@ -325,7 +325,7 @@ def table_N_vs_NMoins1(table1,table2,annee,Emplacement_stockage,backend):
     table = table.replace([np.inf, -np.inf], np.nan).fillna(0)
 
     # Mise en forme en pourcentage
-    table = table.map(lambda x: '{:.1%}'.format(x))
+    table = table.map(lambda x: '{:.1%}'.format(x).replace('.', ',') if isinstance(x, float) else x)
 
 
     table=pd.concat([table2[['Famille acte']],table],axis=1).rename(columns={'Famille acte':str(annee)+' vs '+str(annee-1)})
@@ -507,8 +507,8 @@ def TableConso_par_sous_familles(df,Emplacement_stockage,ID,mesure,Variable_bouc
 
     table[['Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge']]=table[['Nombre consommants','Nombre actes','Remboursement complémentaire','Reste à charge']].map(formatM) # 'Frais réels','Remboursement sécurité sociale'
     table = table.rename(columns={mesure: f"Survenance {annee}"})   
-    table['Remboursement complémentaire moyen par consommant']=table['Remboursement complémentaire moyen par consommant'].apply(lambda x: '{:.2f} €'.format(x))
-    table=table.style.format({'Taux de couverture': "{:.1%}"})
+    table['Remboursement complémentaire moyen par consommant'] = table['Remboursement complémentaire moyen par consommant'].apply(lambda x: f"{x:.1f}".replace(".", ",") + " €")
+    table = table.style.format({'Taux de couverture': lambda x: f"{x*100:.1f}".replace(".", ",") + " %"})
 
     table=format_table_Sousfamille(table,annee)
     st.dataframe(table, use_container_width=True)
@@ -536,7 +536,7 @@ def comparaison_sf_n_n_1(tn,tn_1,Emplacement_stockage,annee,mesure,Variable_bouc
 
     # Formatage conditionnel
     res = res.map(
-        lambda x: '{:.1%}'.format(x) if (0.00001 < abs(x) < 1000 or x == 0) else ""
+        lambda x: '{:.1%}'.format(x).replace('.', ',') if (0.00001 < abs(x) < 1000 or x == 0) else ""
     )
     table = res.reset_index().rename(columns={mesure:str(annee)+' vs '+str(annee-1)})
 
@@ -1070,7 +1070,7 @@ def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotl
     from matplotlib.ticker import FuncFormatter, EngFormatter
 
     def _fmt_euro(x, _=None):
-        if abs(x) >= 1_000_000: return f"{x/1_000_000:.1f} M€"
+        if abs(x) >= 1_000_000: return f"{x/1_000_000:.1f}".replace(".", ",") + " M€"
         if abs(x) >= 1_000:     return f"{x/1_000:.0f} k€"
         return f"{x:.0f} €"
 
@@ -1111,7 +1111,7 @@ def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotl
              color=HEX[8], linewidth=2.5, marker="o", markersize=15,
              zorder=5, markerfacecolor="white",
              markeredgewidth=2, markeredgecolor=HEX[8])
-    ax2.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.1f} %"))
+    ax2.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.1f}".replace(".", ",") + " %"))
     ax2.tick_params(axis="y", labelsize=15, colors=HEX[8], length=0)
     for sp in ax2.spines.values(): sp.set_visible(False)
     ax2.set_ylim(bottom=0,
@@ -1121,7 +1121,7 @@ def proportion_cat_assure(d, cat_assure, Emplacement_stockage, backend="matplotl
     # Annotations % au-dessus des points
     for xi, pct in zip(x, prop_porta.values):
         ax2.annotate(
-            f"{pct*100:.1f} %",
+            f"{pct*100:.1f}".replace(".", ",") + " %",
             xy=(xi, pct * 100),
             xytext=(0, 10), textcoords="offset points",
             ha="center", fontsize=17, fontweight="bold",
@@ -1192,14 +1192,17 @@ def table_evolution_kpis(df, cat_assure, annees, ID, Emplacement_stockage, backe
     ]
 
     table = pd.DataFrame(lignes)
+
     tableAvantMiseEnforme = table.copy()
 
     def fmt_pct(v):
         if v is None or (isinstance(v, float) and np.isnan(v)):
             return "N/D"
         sign = "+" if v >= 0 else ""
-        return f"{sign}{v*100:.1f} %"
+        return sign + f"{v*100:.1f}".replace(".", ",") + " %"
 
+
+    
     table[col1] = table[col1].map(fmt_pct)
     table[col2] = table[col2].map(fmt_pct)
     table = table.rename(columns={'Indicateur': 'Evolution'})

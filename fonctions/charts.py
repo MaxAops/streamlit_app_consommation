@@ -404,7 +404,7 @@ def distributionFamilleActes_pyramide(df, annee, Emplacement_stockage, qualitéG
     MAX_W, MIN_W, ROW_H = 0.85, 0.15, 0.13
     n = len(rcs)
 
-    fig = _make_fig(13, 7)
+    fig = _make_fig(10, 9)
     title_h = _strip_title(fig,
         f"Distribution des familles d'actes · {annee}")
     ax = _add_main_ax(fig, [0.05, 0.05, 0.90, 1 - title_h - 0.05])
@@ -457,7 +457,7 @@ def distributionFamilleActes_donut(df, annee, Emplacement_stockage, qualitéGrap
     values = rcs["RC"].tolist()
     colors = ([HEX[0]] + HEX[2:5] + [HEX[6]] + [HEX[8]])[:len(labels)]
 
-    fig = _make_fig(14, 7)
+    fig = _make_fig(11, 9)
     title_h = _strip_title(fig,
         f"Distribution des familles d'actes · {annee}")
 
