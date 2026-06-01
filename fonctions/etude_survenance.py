@@ -3,6 +3,8 @@ import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+
+import matplotlib.pyplot as plt
  
  
 # ─────────────────────────────────────────────────────────────────────────────
@@ -416,3 +418,124 @@ def export_excel(table: pd.DataFrame, out_path: str):
  
     wb.save(out_path)
     print(f"✓ Fichier sauvegardé : {out_path}")
+
+
+
+def table_pie_chart(df, var, annee_survenance):
+    
+    if (annee_survenance-1 not in df['annee_survenance'].unique()) and (annee_survenance in df['annee_survenance'].unique()):
+        data = df[df['annee_survenance'] == annee_survenance]
+    elif (annee_survenance-1 in df['annee_survenance'].unique()) and (annee_survenance in df['annee_survenance'].unique()):
+        data = df[df['annee_survenance'] >= annee_survenance-1]
+    else:
+        print("La survenance spécifiée n'existe pas dans les données.")
+        return None
+    table = pd.pivot_table(data, values=var, index='type_beneficiaire',columns='annee_survenance', aggfunc='sum')
+    table.index = [f"{el.capitalize()}s" for el in table.index]
+    # Calcul des pourcentages
+    pt_pct = table.div(table.sum(axis=0), axis=1) * 100
+
+    return pt_pct
+
+
+def pie_chart(pt_pct, Emplacement_stockage):
+    colors = [
+        "#173A64",  # bleu
+        "#662064",  # vert
+        "#D86173",  # jaune
+    ]
+
+    n_cols = pt_pct.shape[1]
+
+    if n_cols == 0:
+        raise ValueError("La table ne contient aucune colonne")
+
+    if n_cols > 2:
+        raise ValueError("La fonction gère uniquement 1 ou 2 années")
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+
+    # === CAS 1 : UNE SEULE ANNÉE ===
+    if n_cols == 1:
+        col = pt_pct.columns[0]
+
+        ax.pie(
+            pt_pct[col],
+            radius=1.0,
+            labels=None,
+            colors=colors,
+            autopct='%1.0f%%',
+            pctdistance=0.75,
+            textprops=dict(color="white", fontweight='bold'),
+            wedgeprops=dict(width=0.4, edgecolor='white')
+        )
+
+        # Cercle central
+        centre_circle = plt.Circle((0, 0), 0.6, fc='white')
+        ax.add_artist(centre_circle)
+
+        # Année au centre
+        ax.text(
+            0, 0,
+            col,
+            ha='center',
+            va='center',
+            fontweight='bold'
+        )
+
+    # === CAS 2 : DEUX ANNÉES ===
+    else:
+        # Anneau extérieur (année N)
+        ax.pie(
+            pt_pct[pt_pct.columns[1]],
+            radius=1.0,
+            labels=None,
+            colors=colors,
+            autopct='%1.0f%%',
+            pctdistance=0.85,
+            textprops=dict(color="white", fontweight='bold'),
+            wedgeprops=dict(width=0.3, edgecolor='white')
+        )
+
+        # Anneau intérieur (année N-1)
+        ax.pie(
+            pt_pct[pt_pct.columns[0]],
+            radius=0.7,
+            labels=None,
+            colors=colors,
+            autopct='%1.0f%%',
+            pctdistance=0.75,
+            textprops=dict(color="white", fontweight='bold'),
+            wedgeprops=dict(width=0.3, edgecolor='white')
+        )
+
+        # Cercle blanc central
+        centre_circle = plt.Circle((0, 0), 0.4, fc='white')
+        ax.add_artist(centre_circle)
+
+        # Annotation années
+        ax.text(0, 1.1, pt_pct.columns[1], ha='center', fontweight='bold',color="#173A64")
+        ax.text(0, 0, pt_pct.columns[0], ha='center', fontweight='bold',color="#173A64")
+
+    title="Répartition de la consommation santé par type\nde bénéficiaire au cours des survenances N"
+
+    # Titre
+    t = ax.set_title(title)
+    t.set_color("#173A64")
+
+    # Légende
+    leg = ax.legend(
+        pt_pct.index,
+        loc='lower center',
+        bbox_to_anchor=(0.5, -0.1), ncol=3
+    )
+
+    for txt in leg.get_texts():
+        txt.set_color("#173A64")
+        
+    title=title.replace(' ','_').replace('\n','')
+
+    fig.savefig(Emplacement_stockage + '/' + title + str(pt_pct.columns[1]) + '.jpg',
+                bbox_inches='tight')
+
+    return fig 

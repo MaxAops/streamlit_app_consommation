@@ -1205,7 +1205,7 @@ def table_evolution_kpis(df, cat_assure, annees, ID, Emplacement_stockage, backe
     
     table[col1] = table[col1].map(fmt_pct)
     table[col2] = table[col2].map(fmt_pct)
-    table = table.rename(columns={'Indicateur': 'Evolution'})
+    table = table.rename(columns={'Indicateur': 'Évolution'})
 
     n_rows = len(table)
     styled = (table.style
@@ -1217,7 +1217,7 @@ def table_evolution_kpis(df, cat_assure, annees, ID, Emplacement_stockage, backe
         {"selector": "td", 
         "props": [("text-align", "center"), ("width", "140px")]}
             ], overwrite=False)
-    styled = _style_label_col(styled, 'Evolution')
+    styled = _style_label_col(styled, 'Évolution')
     styled = styled.map(_color_pct, subset=[col1, col2])
     styled = styled.set_properties(**{'width': '140px', 'text-align': 'center'})
 
@@ -1226,7 +1226,7 @@ def table_evolution_kpis(df, cat_assure, annees, ID, Emplacement_stockage, backe
     try:
         dfi.export(
             styled,
-            f"{Emplacement_stockage}/table_evolution_kpis_{annee}.jpg",
+            f"{Emplacement_stockage}/table_evolution_kpis_{annee}_{cat_assure}.jpg",
             dpi=150, table_conversion=backend)
     except:
         print("erreur dfi export table_evolution_kpis")

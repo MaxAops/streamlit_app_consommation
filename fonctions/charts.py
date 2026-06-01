@@ -567,7 +567,8 @@ def Evo_RC(df,cat_assure,qualitéGraphique,Emplacement_stockage):
             ax.barh(y,row["RC"],height=bar_h*0.88,color=col,alpha=0.88,
                     edgecolor=BG,linewidth=0.8,zorder=3,
                     label=str(annee) if fam==ordre[0] else "")
-            ax.text(row["RC"]*1.01,y,f"{row['pct']*100:.1f} %",
+                    
+            ax.text(row["RC"]*1.01,y,f"{row['pct']*100:.1f}%".replace(".", ","),
                     va="center",fontsize=20,color=col,fontweight="bold")
     _apply_ax_theme(ax)
     ax.set_yticks(list(y_pos.values()))
@@ -652,27 +653,55 @@ def Evo_Cons_Moyenne(df, cat_assure, qualitéGraphique, Emplacement_stockage, ID
     if nb_surv >= 3:
         x       = np.arange(len(table))
         n_evol  = len(evol_cols)
-        bar_w   = 0.65 / n_evol
+        group_w   = 0.65 
+        gap = 0.17
+        bar_w = group_w/ n_evol
+        step = bar_w* (1+gap)
+        # mémorise les positions déjà occupées par un label : (x, y_haut, y_bas)
+        placed = []
+        # estimation de la largeur d'un label en coords data (≈ largeur d'une barre)
+        x_tol = bar_w * 0.95
 
         for ei, col in enumerate(evol_cols):
-            off   = (ei - (n_evol-1)/2) * bar_w
+            off   = (ei - (n_evol-1)/2) * step
             vals  = table[col].values
             palette = [HEX[i] for i in [0,1, 4]] + [c for i, c in enumerate(HEX) if i not in [0, 1, 4]]
             color = palette[ei % len(palette)]
             ax.bar(x + off, vals, width=bar_w*0.92, color=color,
                    alpha=0.88, edgecolor=BG, linewidth=0.8, zorder=3)
+
             ymin_ax, ymax_ax = ax.get_ylim()
             pad = (ymax_ax - ymin_ax) * 0.2 if ymax_ax != ymin_ax else 1
-            for xi, v in enumerate(vals):
-                
-                sign = "+" if v >= 0 else ""
-                ax.annotate(f"{sign}{v:.0f}%",
-                    xy=(x[xi] + off, v + (pad*0.15 if v >= 0 else -pad*0.25)),
-                    ha="center", va="bottom" if v >= 0 else "top",
-                    size=15.5, xytext=(0, 8), textcoords="offset points",
-                    rotation=0, color=color,fontweight="bold")
+            # hauteur approximative d'un label en coords data (pour tester le recouvrement)
+            label_h = pad * 0.45
 
-        ax.axhline(0, color=C_ZERO, linewidth=1.2, zorder=2)
+            for xi, v in enumerate(vals):
+                sign = "+" if v >= 0 else ""
+                x_lab = x[xi] + off
+
+                # point d'ancrage de base selon le signe
+                if v >= 0:
+                    y_base, va, dy = v, "bottom", 8
+                else:
+                    y_base, va, dy = v, "top", -8
+
+                # détection de collision avec un label déjà posé (x proche + y qui se recouvre)
+                bump = 0
+                while any(abs(x_lab - px) < x_tol and
+                          abs((y_base + bump*label_h) - py) < label_h
+                          for px, py in placed):
+                    bump += 1  # on monte d'un cran tant que ça se chevauche
+
+                y_lab = y_base + bump * label_h * (1 if v >= 0 else -1)
+                placed.append((x_lab, y_lab))
+
+                ax.annotate(f"{sign}{v:.0f}%",
+                    xy=(x_lab, y_lab),
+                    ha="center", va=va,
+                    size=13, xytext=(0, dy), textcoords="offset points",
+                    rotation=0, color=color, fontweight="bold", zorder=10)
+
+        ax.axhline(0, color=C_ZERO, linewidth=1.15, zorder=2)
         ax.set_xticks(x)
         for i, label in enumerate(ax.get_xticklabels()):
 
@@ -941,15 +970,15 @@ def Panier_plot_ventilation(d,ID,PanierVar,titre,qualitéGraphique,Emplacement_s
     for panier in piv_t.index.get_level_values(PanierVar).unique():
         pos=[i for i,x in enumerate(piv_t.index.get_level_values(PanierVar)) if x==panier]
         ax.text(sum(pos)/len(pos),-11,panier,ha="center",va="top",
-                fontsize=11.5,color=STRIP_DARK,fontweight="bold")
+                fontsize=9,color=STRIP_DARK,fontweight="bold")
     for row_i,col_i in np.ndindex(piv_t.shape):
         vm=piv_m.iloc[row_i,col_i];vp=piv_t.iloc[row_i,col_i]
         if vm!=0 and vp>=8:
             p=ax.patches[col_i*len(piv_t)+row_i]
             ax.text(p.get_x()+p.get_width()/2,p.get_y()+p.get_height()/2,
                     f"{_fmt_euro(vm)}",ha="center",va="center",
-                    color=BG,fontweight="bold",fontsize=13.5)
-                    # , path_effects=[pe.withStroke(linewidth=2, foreground=STRIP_DARK)],fontweight="bold",fontsize=10.5)
+                    color=BG,fontweight="bold",fontsize=12.5)
+                   
             leg = ax.legend(loc="lower center",bbox_to_anchor=(0.5,-0.26),
             ncol=min(4,len(piv_t.columns)),fontsize=12,frameon=False)
             leg.get_title().set_color("#173A64")

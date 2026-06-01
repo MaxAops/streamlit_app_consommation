@@ -5,7 +5,7 @@ import pandas as pd
 from fonctions import workOnData
 
 from fonctions.etude_survenance import (
-    depenses_santé_famille_acte_type_beneficiaire,
+    depenses_santé_famille_acte_type_beneficiaire,table_pie_chart,pie_chart,
     export_excel,normaliser_type_beneficiaire
 )
 
@@ -18,6 +18,7 @@ def etude_survenance():
     if st.session_state.get("donnees") is None:
         st.warning("Veuillez d'abord charger un jeu de données.")
         return
+
 
 
     # ── Sidebar ───────────────────────────────────────────────────────────────
@@ -54,14 +55,29 @@ def etude_survenance():
     if manquantes:
         st.error(f"Colonnes manquantes dans les données : {', '.join(manquantes)}")
         return
+
+
+
+    if st.button("Afficher le camembert", use_container_width=True):
+        pct = table_pie_chart(df_filtre, "RC", an2)
+        if pct is None:
+            st.warning(f"Pas de données de survenance pour {an2} (ni {an2-1}).")
+        else:
+            fig = pie_chart(pct, st.session_state["repertoire_images"])
+            st.pyplot(fig)
     
+
+
     
+
     # ── Calcul ───────────────────────────────────────────────────────────────
     if st.button("▶ Générer le tableau", use_container_width=True):
         try:
             with st.spinner("Calcul en cours..."):
                 table = depenses_santé_famille_acte_type_beneficiaire(df_filtre)
                 table = table.replace([np.inf, -np.inf], np.nan)
+                
+
 
             st.success(f"Tableau généré pour {an1} et {an2}")
 
