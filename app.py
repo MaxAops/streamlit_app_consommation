@@ -16,6 +16,7 @@ try:
     from pages_AppliAnalyseSanté_V2_1.page_etude_sous_famille import etude_sous_famille
     from pages_AppliAnalyseSanté_V2_1.page_etude_prix import etude_prix
     from pages_AppliAnalyseSanté_V2_1.page_effectifs import page_effectifs
+    from pages_AppliAnalyseSanté_V2_1.page_etude_survenance import etude_survenance
 except ImportError as e:
     st.error(f"Erreur lors de l'importation des modules : {e}")
     st.stop()
@@ -33,7 +34,7 @@ PAGES = [
     "Accueil", "Tables consommations",
     "Dispersion des coûts", "Analyse générale","Effectifs",
     "Comparaison entre survenances", "Etude sous famille",
-    "Etude prix", "100% santé", "Cadencements & PSAP",
+    "Etude prix", "100% santé", "Cadencements & PSAP","Etude par survenance"
 ]
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -341,7 +342,7 @@ elif st.session_state["page"] == "Charger les données":
 elif st.session_state["page"] in [
     "Tables consommations", "Dispersion des coûts", "Analyse générale",
     "Comparaison entre survenances", "100% santé", "Etude sous famille",
-    "Etude prix", "Cadencements & PSAP"
+    "Etude prix", "Cadencements & PSAP","Etude par survenance"
 ]:
     if st.session_state["donnees"] is None:
         st.warning("Veuillez d'abord charger un jeu de données.")
@@ -360,3 +361,4 @@ elif st.session_state["page"] in [
         elif p == "Etude prix":                    etude_prix()
         elif p == "Effectifs":                     page_effectifs()
         elif p == "Cadencements & PSAP":           cadencement_PSAP()
+        elif p == "Etude par survenance":          etude_survenance()

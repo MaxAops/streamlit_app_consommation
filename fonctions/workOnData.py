@@ -29,7 +29,8 @@ def Famille_acte_sorted(df):
     return Famille_acte_sorted
 
 def formatM(NUM):
-    return('{:,.0f}'.format(NUM).replace(',', ' '))
+    return '{:,.0f}'.format(NUM).replace(',', ' ').replace('.', ',')
+
 
 def GetTypeBénéf(ID):
     a=''

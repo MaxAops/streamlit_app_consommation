@@ -12,6 +12,7 @@ choix_annee=[2016,2017,2018,2019,2020,2021, 2022, 2023,2024,2025]
 df = st.session_state.get("donnees")
 
 
+
 def comparaison_survenances():
     df = st.session_state.get("donnees")
 
@@ -20,6 +21,9 @@ def comparaison_survenances():
         st.warning("⚠️ Aucune donnée chargée")
         return
 
+        
+    if 'cat_assure' not in df.columns:
+        df['cat_assure']='actifs'
 
     choix_categorie = df["cat_assure"].unique()
 
@@ -50,12 +54,13 @@ def comparaison_survenances():
             if not cancel:
                 # Charger les données CSV à partir du fichier
                 data=workOnData.load_data(st.session_state["donnees"],annees,mois_min, mois_max)
+                build_conso_tables.table_evolution_kpis(data,cat_assure_choose,annees,ID,st.session_state["repertoire_images"])
                 charts.proportion_cat_assure(data,cat_assure_choose,st.session_state["repertoire_images"],ID)
                 charts.Evo_Cons_Moyenne(data,cat_assure_choose, st.session_state["Qualité images"],st.session_state["repertoire_images"],ID)
                 charts.Evo_RC(data,cat_assure_choose,st.session_state["Qualité images"],st.session_state["repertoire_images"])
                 charts.EVO_Montant(data,'RC',st.session_state["Qualité images"],st.session_state["repertoire_images"])
-                charts.EVO_Consommateurs(data,st.session_state["Qualité images"],st.session_state["repertoire_images"],ID)
+                charts.EVO_Consommateurs(data,cat_assure_choose,st.session_state["Qualité images"],st.session_state["repertoire_images"],ID)
                 charts.EVO_Remboursement_moy(data,'RC',st.session_state["Qualité images"],st.session_state["repertoire_images"],ID)
-        
+                
             else:
                 st.write("L'exécution a été annulée.")
